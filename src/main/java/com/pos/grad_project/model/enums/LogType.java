@@ -1,0 +1,5 @@
+package com.pos.grad_project.model.enums;
+
+public enum LogType {
+    COURSE_CREATED,ASSIGNMENT_SUBMITTED,GRADE_UPDATED,STUDENT_JOINED,MATERIAL_UPLOADED,COURSE_DELETED
+}

@@ -1,7 +1,6 @@
 package com.pos.grad_project.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,30 +10,25 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.Where;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.List;
-
 @Entity
-@Table(name = "sections")
+@Table(name = "student_my_courses")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Where(clause= "deleted_at is null")
-public class SectionEntity {//not completed till end
+public class StudentMyCourseEntity {//many to many w de faktha
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="section_id")
+    @Column(name="student_my_courses_id")
     private Long id;
-    private String title;
-    @Column(name="total_lessons")
-    private Integer totalLessons;
-    private Duration duration;
-    @Column(name="order_index")
-    private Integer orderIndex;
-    @Column(name="is_completed")
+    private Double progress;
+    private Double grade;
+    @Column(name = "is_completed")
     private Boolean isCompleted;
+    @Column(name = "courses_count")
+    private Integer coursesCount;
     @CreationTimestamp
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -43,17 +37,13 @@ public class SectionEntity {//not completed till end
     private LocalDateTime updatedAt;
     @Column(name="deleted_at")
     private LocalDateTime  deletedAt;
+    @JsonBackReference
+    @ManyToOne
+    @JoinColumn(name="course_id")
+    private CourseEntity course;
 
     @JsonBackReference
     @ManyToOne
-    @JoinColumn(name = "course_id")
-    private CourseEntity course;
-
-    @JsonManagedReference
-    @OneToMany
-    private List<QuizFromTeacherEntity> quizFromTeacher;
-
-    @JsonManagedReference
-    @OneToOne(mappedBy = "section")
-    private MaterialEntity material;
+    @JoinColumn(name="student_id")
+    private StudentEntity student;
 }

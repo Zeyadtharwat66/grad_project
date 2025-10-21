@@ -8,41 +8,37 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.Where;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
-@Table(name = "wishlist")
+@Table(name = "quiz_submission")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Where(clause= "deleted_at is null")
-public class WishListEntity {
+public class QuizSubmitedEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="wishlist_id")
+    @Column(name="quiz_submission_id")
     private Long id;
+    @Column(name="submitted_at")
     @CreationTimestamp
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-    @Column(name="deleted_at")
-    private LocalDateTime  deletedAt;
-
+    private LocalDateTime submittedAt;
+    @Enumerated(EnumType.STRING)
+    private MaterialType materialType;
+    @Column(name = "file_url")
+    private String fileUrl;
     @JsonBackReference
-    @ManyToOne
-    @JoinColumn(name="course_id")
-    private CourseEntity course;
-
-
-    @JsonBackReference
-    @ManyToOne
+    @OneToOne
     @JoinColumn(name="student_id")
     private StudentEntity student;
+    @JsonBackReference
+    @ManyToOne
+    @JoinColumn(name = "quiz_teacher_id")
+    private QuizFromTeacherEntity quizFromTeachers;
 
 }

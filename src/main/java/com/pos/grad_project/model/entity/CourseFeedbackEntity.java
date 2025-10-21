@@ -1,7 +1,6 @@
 package com.pos.grad_project.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,30 +10,22 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.Where;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
-@Table(name = "sections")
+@Table(name = "courses_feedback")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Where(clause= "deleted_at is null")
-public class SectionEntity {//not completed till end
+public class CourseFeedbackEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="section_id")
+    @Column(name="courses_feedback_id")
     private Long id;
-    private String title;
-    @Column(name="total_lessons")
-    private Integer totalLessons;
-    private Duration duration;
-    @Column(name="order_index")
-    private Integer orderIndex;
-    @Column(name="is_completed")
-    private Boolean isCompleted;
+    private String comment;
+    private Float rating;
     @CreationTimestamp
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -48,12 +39,9 @@ public class SectionEntity {//not completed till end
     @ManyToOne
     @JoinColumn(name = "course_id")
     private CourseEntity course;
+    @JsonBackReference
+    @ManyToOne
+    @JoinColumn(name = "student_id")
+    private StudentEntity student;
 
-    @JsonManagedReference
-    @OneToMany
-    private List<QuizFromTeacherEntity> quizFromTeacher;
-
-    @JsonManagedReference
-    @OneToOne(mappedBy = "section")
-    private MaterialEntity material;
 }
