@@ -22,7 +22,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Where(clause= "deleted_at is null")
-public class SectionEntity {//not completed till end
+public class SectionEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="section_id")
@@ -50,10 +50,14 @@ public class SectionEntity {//not completed till end
     private CourseEntity course;
 
     @JsonManagedReference
-    @OneToMany
+    @OneToMany(mappedBy = "submitted")
     private List<QuizFromTeacherEntity> quizFromTeacher;
 
     @JsonManagedReference
     @OneToOne(mappedBy = "section")
     private MaterialEntity material;
+
+    @JsonManagedReference
+    @OneToMany(mappedBy = "section")
+    private List<VideoEntity> video;
 }

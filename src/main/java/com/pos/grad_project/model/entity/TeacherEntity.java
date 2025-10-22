@@ -86,11 +86,14 @@ public class TeacherEntity {
 
     @JsonManagedReference
     @OneToMany(mappedBy = "teacher",cascade = CascadeType.ALL)
-    private List<AssignmentEntity> assignments;
+    private List<TeacherAssignmentEntity> assignments;
 
     @JsonManagedReference
     @OneToMany(mappedBy = "teacher",cascade = CascadeType.ALL)
     private List<StudentNotificationEntity> studentNotifications;
 
+    @JsonManagedReference
+    @OneToMany(mappedBy = "teacher",cascade = CascadeType.ALL)
+    private List<AssignmentSubmissionEntity> assignmentSubmission;
 
 }

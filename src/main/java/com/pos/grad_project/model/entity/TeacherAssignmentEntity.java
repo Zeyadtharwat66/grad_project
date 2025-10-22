@@ -2,7 +2,7 @@ package com.pos.grad_project.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.pos.grad_project.model.enums.VideoStatus;
+import com.pos.grad_project.model.enums.MaterialType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,32 +12,32 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.Where;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "videos")
+@Table(name = "teacher_assignment")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Where(clause= "deleted_at is null")
-public class VideoEntity {
+public class TeacherAssignmentEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="video_id")
+    @Column(name="assignment_id")
     private Long id;
-    private String title;
     @Enumerated(EnumType.STRING)
-    private VideoStatus status;
-    private String description;
-    private Duration duration;
-    private String url;
-    @Column(name="order_index")
-    private Integer orderIndex;
-    @Column(name="number_of_likes")
-    private Integer numberOfLikes;
+    private MaterialType type;
+    private String title;
+    @Column(name = "file_url")
+    private String fileUrl;
+    @Column(name = "full_mark")
+    private Double fullMark;
+    @Column(name = "start_date")
+    private LocalDateTime startDate;
+    @Column(name = "expiration_date")
+    private LocalDateTime expirationDate;
     @CreationTimestamp
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -48,21 +48,21 @@ public class VideoEntity {
     private LocalDateTime  deletedAt;
 
     @JsonManagedReference
-    @OneToMany(mappedBy = "video",cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "assignment",cascade = CascadeType.ALL)
     private List<AssignmentSubmissionEntity> studentAssignments;
 
-    @JsonManagedReference
-    @OneToOne(mappedBy = "video",cascade = CascadeType.ALL)
-    private TeacherAssignmentEntity teacherAssignments;
+    @JsonBackReference
+    @OneToOne
+    @JoinColumn(name="video_id")
+    private VideoEntity video;
 
     @JsonBackReference
     @ManyToOne
-    @JoinColumn(name = "course_id")
+    @JoinColumn(name="course_id")
     private CourseEntity course;
 
     @JsonBackReference
-    @ManyToOne
-    @JoinColumn(name = "section_id")
-    private SectionEntity section;
-
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "teacher_id")
+    private TeacherEntity teacher;
 }

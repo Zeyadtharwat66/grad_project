@@ -80,8 +80,8 @@ public class StudentEntity {
     private List<Student_StudentNotificationEntity> studentNotifications;
     @JsonManagedReference
     @OneToMany(mappedBy = "student",cascade = CascadeType.ALL)
-    private List<StudentAssignmentEntity> studentAssignments;
+    private List<AssignmentSubmissionEntity> studentAssignments;
     @JsonManagedReference
-    @OneToOne(mappedBy = "student",cascade = CascadeType.ALL)
-    private StudentEntity student;
+    @OneToMany(mappedBy = "student",cascade = CascadeType.ALL)
+    private List<QuizSubmitedEntity> submissions;
 }

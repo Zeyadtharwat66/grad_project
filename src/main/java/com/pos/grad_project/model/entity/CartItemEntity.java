@@ -1,45 +1,54 @@
 package com.pos.grad_project.model.entity;
 
+
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.pos.grad_project.model.enums.MaterialType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.Where;
 
 import java.time.LocalDateTime;
-import java.util.List;
-
 @Entity
-@Table(name = "quiz_submission")
+@Table(name = "cart_item")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Where(clause= "deleted_at is null")
-public class QuizSubmitedEntity {
+public class CartItemEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="quiz_submission_id")
+    @Column(name="cart_item_id")
     private Long id;
-    @Column(name="submitted_at")
-    @CreationTimestamp
-    private LocalDateTime submittedAt;
-    @Enumerated(EnumType.STRING)
-    private MaterialType materialType;
-    @Column(name = "file_url")
-    private String fileUrl;
-    @JsonBackReference
-    @ManyToOne
-    @JoinColumn(name="student_id")
-    private StudentEntity student;
+
 
     @JsonBackReference
     @ManyToOne
-    @JoinColumn(name = "quiz_teacher_id")
-    private QuizFromTeacherEntity quizFromTeachers;
+    @JoinColumn(name = "cart_id", nullable = false)
+    private CartEntity cart;
+
+
+    @JsonBackReference
+    @ManyToOne
+    @JoinColumn(name = "course_id", nullable = false)
+    private CourseEntity course;
+
+    @Column(name = "price")
+    private Double price;
+
+    @CreationTimestamp
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+    @Column(name="deleted_at")
+    private LocalDateTime  deletedAt;
+
+
 
 }

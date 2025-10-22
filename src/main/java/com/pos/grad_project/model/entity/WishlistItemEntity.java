@@ -1,45 +1,52 @@
 package com.pos.grad_project.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.pos.grad_project.model.enums.MaterialType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.Where;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
-@Table(name = "quiz_submission")
+@Table(name = "wishlist_item")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Where(clause= "deleted_at is null")
-public class QuizSubmitedEntity {
+public class WishlistItemEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="quiz_submission_id")
+    @Column(name="wishlist_item_id")
     private Long id;
-    @Column(name="submitted_at")
-    @CreationTimestamp
-    private LocalDateTime submittedAt;
-    @Enumerated(EnumType.STRING)
-    private MaterialType materialType;
-    @Column(name = "file_url")
-    private String fileUrl;
-    @JsonBackReference
-    @ManyToOne
-    @JoinColumn(name="student_id")
-    private StudentEntity student;
+
 
     @JsonBackReference
     @ManyToOne
-    @JoinColumn(name = "quiz_teacher_id")
-    private QuizFromTeacherEntity quizFromTeachers;
+    @JoinColumn(name = "wishlist_id", nullable = false)
+    private WishListEntity wishlist;
+
+    @JsonBackReference
+    @ManyToOne
+    @JoinColumn(name = "course_id", nullable = false)
+    private CourseEntity course;
+
+
+    @CreationTimestamp
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+    @Column(name="deleted_at")
+    private LocalDateTime  deletedAt;
+
+
 
 }

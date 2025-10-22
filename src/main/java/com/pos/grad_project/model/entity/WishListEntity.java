@@ -1,6 +1,7 @@
 package com.pos.grad_project.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.pos.grad_project.model.enums.MaterialType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -12,6 +13,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.Where;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "wishlist")
@@ -39,6 +41,9 @@ public class WishListEntity {
     @JoinColumn(name="course_id")
     private CourseEntity course;
 
+    @JsonManagedReference
+    @OneToMany(mappedBy = "wishlist",cascade = CascadeType.ALL)
+    private List<WishlistItemEntity> wishlistItem;
 
     @JsonBackReference
     @ManyToOne

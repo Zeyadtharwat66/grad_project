@@ -11,13 +11,13 @@ import org.hibernate.annotations.Where;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "student_assignments")
+@Table(name = "assignments_submission")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Where(clause = "deleted_at is null")
-public class StudentAssignmentEntity {
+public class AssignmentSubmissionEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="student_assignmet_id")
@@ -44,7 +44,7 @@ public class StudentAssignmentEntity {
     @JsonBackReference
     @ManyToOne
     @JoinColumn(name = "assignment_id", nullable = false)
-    private AssignmentEntity assignment;
+    private TeacherAssignmentEntity assignment;
 
     @JsonBackReference
     @ManyToOne
@@ -55,4 +55,9 @@ public class StudentAssignmentEntity {
     @ManyToOne
     @JoinColumn(name = "video_id", nullable = false)
     private VideoEntity video;
+
+    @JsonBackReference
+    @ManyToOne
+    @JoinColumn(name = "teacher_id", nullable = false)
+    private TeacherEntity teacher;
 }

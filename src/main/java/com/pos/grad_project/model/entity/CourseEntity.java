@@ -60,11 +60,13 @@ public class CourseEntity {
 
     @JsonManagedReference
     @OneToMany(mappedBy = "course",cascade = CascadeType.ALL)
-    private List<WishListEntity> wishlists;
+    private List<WishlistItemEntity> wishlistItem;
 
     @JsonManagedReference
     @OneToMany(mappedBy = "course",cascade = CascadeType.ALL)
-    private List<CartEntity> cart;
+    private List<CartItemEntity> cartItem;
+
+
 
     @JsonManagedReference
     @OneToMany(mappedBy = "course",cascade = CascadeType.ALL)
@@ -93,5 +95,14 @@ public class CourseEntity {
 
     @JsonManagedReference
     @OneToMany(mappedBy = "course",cascade = CascadeType.ALL)
-    private List<StudentAssignmentEntity> studentassignments;
+    private List<AssignmentSubmissionEntity> studentassignments;
+
+    @JsonManagedReference
+    @OneToMany(mappedBy = "course",cascade = CascadeType.ALL)
+    private List<TeacherAssignmentEntity> teacherAssignments;
+
+    @JsonManagedReference
+    @OneToMany(mappedBy = "course",cascade = CascadeType.ALL)
+    private List<VideoEntity> videos;
+
 }

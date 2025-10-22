@@ -2,7 +2,6 @@ package com.pos.grad_project.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.pos.grad_project.model.enums.MaterialType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,34 +11,26 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.Where;
 
-import java.time.Duration;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "assignment")
+@Table(name = "student_myCourse_item")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Where(clause= "deleted_at is null")
-public class AssignmentEntity {
+public class StudentMyCourseItemEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="assignment_id")
+    @Column(name="student_myCourse_item_id")
     private Long id;
-    @Enumerated(EnumType.STRING)
-    private MaterialType type;
-    private String title;
-    @Column(name = "file_url")
-    private String fileUrl;
-    @Column(name = "full_mark")
-    private Double fullMark;
-    @Column(name = "start_date")
-    private LocalDateTime startDate;
-    @Column(name = "expiration_date")
-    private LocalDateTime expirationDate;
+    private Double progress;
+
+    @Column(name = "is_completed")
+    private Boolean isCompleted;
+
     @CreationTimestamp
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -48,12 +39,22 @@ public class AssignmentEntity {
     private LocalDateTime updatedAt;
     @Column(name="deleted_at")
     private LocalDateTime  deletedAt;
-    @JsonManagedReference
-    @OneToMany(mappedBy = "assignment",cascade = CascadeType.ALL)
-    private List<StudentAssignmentEntity> studentAssignments;
 
     @JsonBackReference
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "teacher_id")
-    private TeacherEntity teacher;
+    @ManyToOne
+    @JoinColumn(name="course_id")
+    private CourseEntity course;
+
+    @JsonBackReference
+    @ManyToOne
+    @JoinColumn(name="student_my_courses_id")
+    private StudentMyCourseEntity studentMyCourse;
+
+    @JsonBackReference
+    @ManyToOne
+    @JoinColumn(name="student_id")
+    private StudentEntity student;
+
 }
+
+
