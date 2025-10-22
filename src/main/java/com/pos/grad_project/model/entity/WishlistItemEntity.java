@@ -26,7 +26,6 @@ public class WishlistItemEntity {
     @Column(name="wishlist_item_id")
     private Long id;
 
-
     @JsonBackReference
     @ManyToOne
     @JoinColumn(name = "wishlist_id", nullable = false)
@@ -37,7 +36,6 @@ public class WishlistItemEntity {
     @JoinColumn(name = "course_id", nullable = false)
     private CourseEntity course;
 
-
     @CreationTimestamp
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -46,7 +44,5 @@ public class WishlistItemEntity {
     private LocalDateTime updatedAt;
     @Column(name="deleted_at")
     private LocalDateTime  deletedAt;
-
-
 
 }

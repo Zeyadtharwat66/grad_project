@@ -24,12 +24,12 @@ public class Student_StudentNotificationEntity {
     private LocalDateTime sentAt = LocalDateTime.now();
     @JsonBackReference
     @ManyToOne
-    @JoinColumn(name = "student_id")
+    @JoinColumn(name = "student_id", nullable = false)
     private StudentEntity student;
 
     @JsonBackReference
     @ManyToOne
-    @JoinColumn(name = "notification_id")
+    @JoinColumn(name = "notification_id", nullable = false)
     private StudentNotificationEntity notification;
 
 }

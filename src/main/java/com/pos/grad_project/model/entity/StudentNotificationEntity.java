@@ -43,12 +43,12 @@ public class StudentNotificationEntity {
 
     @JsonManagedReference
     @ManyToOne
-    @JoinColumn(name = "course_id", nullable = true)
+    @JoinColumn(name = "course_id")
     private CourseEntity course;
 
     @JsonManagedReference
     @ManyToOne
-    @JoinColumn(name = "teacher_id", nullable = true)
+    @JoinColumn(name = "teacher_id")
     private TeacherEntity teacher;
 
     @JsonManagedReference

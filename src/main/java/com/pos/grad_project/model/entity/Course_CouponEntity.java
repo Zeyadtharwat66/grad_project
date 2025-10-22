@@ -23,11 +23,11 @@ public class Course_CouponEntity {
 
     @JsonBackReference
     @ManyToOne
-    @JoinColumn(name = "course_id")
+    @JoinColumn(name = "course_id", nullable = false)
     private CourseEntity course;
 
     @JsonBackReference
     @ManyToOne
-    @JoinColumn(name = "coupon_id")
+    @JoinColumn(name = "coupon_id", nullable = false)
     private CouponEntity coupon;
 }

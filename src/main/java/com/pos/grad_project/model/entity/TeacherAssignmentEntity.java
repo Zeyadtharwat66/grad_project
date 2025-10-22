@@ -53,16 +53,16 @@ public class TeacherAssignmentEntity {
 
     @JsonBackReference
     @OneToOne
-    @JoinColumn(name="video_id")
+    @JoinColumn(name="video_id",nullable = false)
     private VideoEntity video;
 
     @JsonBackReference
     @ManyToOne
-    @JoinColumn(name="course_id")
+    @JoinColumn(name="course_id",nullable = false)
     private CourseEntity course;
 
     @JsonBackReference
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "teacher_id")
+    @JoinColumn(name = "teacher_id",nullable = false)
     private TeacherEntity teacher;
 }

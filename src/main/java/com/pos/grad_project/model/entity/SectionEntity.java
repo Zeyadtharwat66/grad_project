@@ -46,7 +46,7 @@ public class SectionEntity {
 
     @JsonBackReference
     @ManyToOne
-    @JoinColumn(name = "course_id")
+    @JoinColumn(name = "course_id", nullable = false)
     private CourseEntity course;
 
     @JsonManagedReference

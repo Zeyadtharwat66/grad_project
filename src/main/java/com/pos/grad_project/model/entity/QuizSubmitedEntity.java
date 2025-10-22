@@ -34,12 +34,12 @@ public class QuizSubmitedEntity {
     private String fileUrl;
     @JsonBackReference
     @ManyToOne
-    @JoinColumn(name="student_id")
+    @JoinColumn(name="student_id", nullable = false)
     private StudentEntity student;
 
     @JsonBackReference
     @ManyToOne
-    @JoinColumn(name = "quiz_teacher_id")
+    @JoinColumn(name = "quiz_teacher_id", nullable = false)
     private QuizFromTeacherEntity quizFromTeachers;
 
 }

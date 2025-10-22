@@ -42,17 +42,17 @@ public class StudentMyCourseItemEntity {
 
     @JsonBackReference
     @ManyToOne
-    @JoinColumn(name="course_id")
+    @JoinColumn(name="course_id", nullable = false)
     private CourseEntity course;
 
     @JsonBackReference
     @ManyToOne
-    @JoinColumn(name="student_my_courses_id")
+    @JoinColumn(name="student_my_courses_id", nullable = false)
     private StudentMyCourseEntity studentMyCourse;
 
     @JsonBackReference
     @ManyToOne
-    @JoinColumn(name="student_id")
+    @JoinColumn(name="student_id", nullable = false)
     private StudentEntity student;
 
 }

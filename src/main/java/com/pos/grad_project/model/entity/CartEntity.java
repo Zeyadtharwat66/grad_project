@@ -40,7 +40,7 @@ public class CartEntity {
 
     @JsonBackReference
     @ManyToOne
-    @JoinColumn(name="student_id")
+    @JoinColumn(name="student_id", nullable = false)
     private StudentEntity student;
 
     @JsonManagedReference

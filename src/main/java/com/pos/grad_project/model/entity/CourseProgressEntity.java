@@ -20,7 +20,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class CourseProgressEntity {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "course_progress_id")
@@ -30,6 +29,7 @@ public class CourseProgressEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", nullable = false)
     private StudentEntity student;
+
     @JsonBackReference
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_id", nullable = false)

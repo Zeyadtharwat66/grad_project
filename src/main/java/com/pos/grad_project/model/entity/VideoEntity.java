@@ -57,7 +57,7 @@ public class VideoEntity {
 
     @JsonBackReference
     @ManyToOne
-    @JoinColumn(name = "course_id")
+    @JoinColumn(name = "course_id",nullable = false)
     private CourseEntity course;
 
     @JsonBackReference
