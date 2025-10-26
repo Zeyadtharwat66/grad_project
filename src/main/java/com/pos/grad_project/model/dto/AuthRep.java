@@ -1,4 +1,4 @@
 package com.pos.grad_project.model.dto;
 
-public class WishListDTO {
+public record AuthRep(String token) {
 }

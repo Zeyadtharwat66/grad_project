@@ -38,6 +38,7 @@ public class StudentEntity {
     private String username;
     @Column(name = "profile_picture_url")
     private String profilePictureUrl;
+    private String role;
     @Email
     @NotNull()
     @Column(unique = true)
