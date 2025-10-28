@@ -56,7 +56,7 @@ public class QuizFromTeacherEntity {
     private SectionEntity section;
 
     @JsonManagedReference
-    @OneToMany(mappedBy="quizFromTeachers" )
+    @OneToMany(mappedBy="quizFromTeacher" )
     private List<QuizSubmitedEntity> submitted;
 
 

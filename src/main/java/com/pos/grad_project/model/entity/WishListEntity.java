@@ -36,10 +36,7 @@ public class WishListEntity {
     @Column(name="deleted_at")
     private LocalDateTime  deletedAt;
 
-    @JsonBackReference
-    @ManyToOne
-    @JoinColumn(name="course_id",nullable = false)
-    private CourseEntity course;
+
 
     @JsonManagedReference
     @OneToMany(mappedBy = "wishlist",cascade = CascadeType.ALL)

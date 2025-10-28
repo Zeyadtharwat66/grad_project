@@ -48,8 +48,5 @@ public class StudentMyCourseEntity {
     @JoinColumn(name="student_id", nullable = false)
     private StudentEntity student;
 
-    @JsonManagedReference
-    @OneToMany(mappedBy = "studentMyCourse",cascade = CascadeType.ALL)
-    private List<StudentMyCourseEntity> studenyMyCourse;
 
 }

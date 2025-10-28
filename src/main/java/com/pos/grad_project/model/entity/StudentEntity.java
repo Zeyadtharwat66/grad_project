@@ -32,7 +32,6 @@ public class StudentEntity {
     @Column(name="student_id")
     private Long id;
     @NotNull()
-    @Pattern(regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!_*])(?=\\S+$).{8,}$",message = "Strong password")
     private String password;
     @NotNull()
     private String username;
@@ -45,7 +44,8 @@ public class StudentEntity {
     private String email;
     @NotNull()
     @Pattern(regexp = "^(01[0-2,5]{1}[0-9]{8})$", message = "Invalid Egyptian phone number")
-    private String phone;
+    @Column(name="phone_number")
+    private String phoneNumber;
     @Enumerated(EnumType.STRING)
     private Gender gender;
     @Enumerated(EnumType.STRING)

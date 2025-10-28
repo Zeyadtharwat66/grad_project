@@ -40,6 +40,6 @@ public class QuizSubmitedEntity {
     @JsonBackReference
     @ManyToOne
     @JoinColumn(name = "quiz_teacher_id", nullable = false)
-    private QuizFromTeacherEntity quizFromTeachers;
+    private QuizFromTeacherEntity quizFromTeacher;
 
 }
