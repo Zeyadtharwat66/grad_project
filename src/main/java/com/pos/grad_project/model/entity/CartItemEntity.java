@@ -25,6 +25,10 @@ public class CartItemEntity {
     @Column(name="cart_item_id")
     private Long id;
 
+    @JsonBackReference
+    @ManyToOne
+    @JoinColumn(name="student_id", nullable = false)
+    private StudentEntity student;
 
     @JsonBackReference
     @ManyToOne

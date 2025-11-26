@@ -36,13 +36,13 @@ public class CourseEntity {
     private Double price;
     @Column(name="image_url")
     private String imageUrl;
-    private Float rating;
+    private Float rating;//// Info should split this table
     private Duration duration;
     @Enumerated(EnumType.STRING)
     private Grade grade;
     private Boolean paid;
     @Column(name="number_of_students")
-    private Integer numberOfStudents;
+    private Integer numberOfStudents; // in enrollment/regrestration table, concurrency issue
     @CreationTimestamp
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -54,7 +54,7 @@ public class CourseEntity {
 
 
     @JsonBackReference
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "teacher_id", nullable = false)
     private TeacherEntity teacher;
 
@@ -70,7 +70,7 @@ public class CourseEntity {
 
     @JsonManagedReference
     @OneToMany(mappedBy = "course",cascade = CascadeType.ALL)
-    private List<StudentMyCourseEntity> myCourses;
+    private List<StudentMyCourseItemEntity> myCourses;
 
     @JsonBackReference
     @ManyToOne(fetch = FetchType.LAZY)

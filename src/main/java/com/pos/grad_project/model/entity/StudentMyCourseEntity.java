@@ -40,13 +40,11 @@ public class StudentMyCourseEntity {
 
     @JsonBackReference
     @ManyToOne
-    @JoinColumn(name="course_id", nullable = false)
-    private CourseEntity course;
-
-    @JsonBackReference
-    @ManyToOne
     @JoinColumn(name="student_id", nullable = false)
     private StudentEntity student;
 
+    @JsonManagedReference
+    @OneToMany(mappedBy = "studentMyCourse",cascade = CascadeType.ALL,orphanRemoval = true)
+    private List<StudentMyCourseItemEntity> myCourseItems;
 
 }

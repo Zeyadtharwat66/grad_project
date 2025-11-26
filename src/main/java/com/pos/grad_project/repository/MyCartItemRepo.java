@@ -1,0 +1,17 @@
+package com.pos.grad_project.repository;
+
+import com.pos.grad_project.model.entity.CartItemEntity;
+import com.pos.grad_project.model.entity.CourseEntity;
+import com.pos.grad_project.model.entity.StudentEntity;
+import com.pos.grad_project.model.entity.StudentMyCourseItemEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface MyCartItemRepo extends JpaRepository<CartItemEntity,Long> {
+   Page<CartItemEntity> findAllByStudentId(long studentId, Pageable pagebale);
+   Boolean existsByCourse(CourseEntity course);
+   CartItemEntity findByCourse(CourseEntity course);
+}

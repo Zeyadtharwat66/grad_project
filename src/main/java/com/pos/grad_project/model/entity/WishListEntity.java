@@ -39,7 +39,7 @@ public class WishListEntity {
 
 
     @JsonManagedReference
-    @OneToMany(mappedBy = "wishlist",cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "wishlist",cascade = CascadeType.ALL,orphanRemoval = true)
     private List<WishlistItemEntity> wishlistItem;
 
     @JsonBackReference

@@ -5,6 +5,7 @@ import com.pos.grad_project.model.enums.Gender;
 import com.pos.grad_project.model.enums.Grade;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
@@ -31,19 +32,14 @@ public class StudentEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="student_id")
     private Long id;
-    @NotNull()
     private String password;
-    @NotNull()
     private String username;
     @Column(name = "profile_picture_url")
     private String profilePictureUrl;
     private String role;
     @Email
-    @NotNull()
     @Column(unique = true)
     private String email;
-    @NotNull()
-    @Pattern(regexp = "^(01[0-2,5]{1}[0-9]{8})$", message = "Invalid Egyptian phone number")
     @Column(name="phone_number")
     private String phoneNumber;
     @Enumerated(EnumType.STRING)

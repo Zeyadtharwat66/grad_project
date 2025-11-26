@@ -19,7 +19,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Where(clause= "deleted_at is null")
 public class QuizSubmitedEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

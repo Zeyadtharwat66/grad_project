@@ -7,5 +7,6 @@ import java.util.Optional;
 
 public interface StudentRepo extends JpaRepository<StudentEntity, Long> {
     public Optional<StudentEntity> findByUsername(String username);
-
+    public StudentEntity findById(long id);
+    long countByDeletedAtIsNull();
 }
