@@ -56,7 +56,9 @@ public class SectionEntity {
     @JsonManagedReference
     @OneToOne(mappedBy = "section")
     private MaterialEntity material;
-
+    @JsonManagedReference
+    @OneToMany(mappedBy = "section",cascade = CascadeType.ALL,orphanRemoval = true)
+    private List<NotesEntity> notes;
     @JsonManagedReference
     @OneToMany(mappedBy = "section")
     private List<VideoEntity> video;

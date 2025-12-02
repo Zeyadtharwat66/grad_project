@@ -10,10 +10,15 @@ public class CorsConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOriginPatterns("http://172.16.130.77:3000", "http://localhost:3000")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedOriginPatterns(
+                        "http://192.168.1.166:3000",
+                        "http://localhost:3000"
+                )
+                .allowedMethods("*")
                 .allowedHeaders("*")
-                .allowCredentials(true);
+                .exposedHeaders("Authorization") // مهم لو هترجع header
+                .allowCredentials(false); // ❗ بقيت false لأن مالناش Cookies
     }
 }
+
 

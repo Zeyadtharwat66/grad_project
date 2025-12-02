@@ -1,8 +1,5 @@
 package com.pos.grad_project.service.Imp;
-import com.pos.grad_project.model.dto.LoginDTO;
-import com.pos.grad_project.model.dto.MyCoursesItemRespDTO;
-import com.pos.grad_project.model.dto.RegisterDTO;
-import com.pos.grad_project.model.dto.StudentRespDTO;
+import com.pos.grad_project.model.dto.*;
 import com.pos.grad_project.model.entity.*;
 import com.pos.grad_project.model.mapper.StudentMapper;
 import com.pos.grad_project.repository.*;
@@ -19,19 +16,17 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -50,33 +45,46 @@ public class StudentServiceImp implements StudentService {
     private final CartRepo cartRepo;
     private final WishListRepo wishListRepo;
     private final MyCourseRepo myCourseRepo;
+    private final CourseProgressRepo courseProgressRepo;
     @Override
     public ResponseEntity<?> login(LoginDTO loginDTO) {
+
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginDTO.username(), loginDTO.password())
         );
+
         String token = jwtTokenService.generateJWTToken(authentication);
-        ResponseCookie cookie = ResponseCookie.from("jwt", token)
-                .httpOnly(true)
-                .secure(false)
-                .path("/")
-                .maxAge(7 * 24 * 60 * 60)
-                .sameSite("None")
-                .build();
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(Map.of("message", loginDTO));
+
+        StudentEntity studentEntity = studentRepo.findByUsername(loginDTO.username())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+        HashMap<String,Object> user = new HashMap<>();
+        user.put("id", studentEntity.getId());
+        user.put("username", studentEntity.getUsername());
+        user.put("grade", studentEntity.getGrade());
+        user.put("phoneNumber", studentEntity.getPhoneNumber());
+        user.put("email", studentEntity.getEmail());
+        user.put("birthDate", studentEntity.getBirthDate());
+        user.put("gender", studentEntity.getGender());
+
+        return ResponseEntity.ok(Map.of(
+                "token", token,
+                "user", user
+        ));
     }
     @Override
     public ResponseEntity<?> getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.isAuthenticated()) {
-            return ResponseEntity.ok(Map.of(
-                    "username", authentication.getName(),
-                    "roles", authentication.getAuthorities()
-            ));
+        if (authentication == null || !authentication.isAuthenticated() ||
+                authentication.getPrincipal().equals("anonymousUser")) {
+
+            return ResponseEntity.status(401).body("Not logged in");
         }
-        return ResponseEntity.status(497).body("Not logged in");
+        // extract user details
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        return ResponseEntity.ok(Map.of(
+                "username", userDetails.getUsername(),
+                "roles", userDetails.getAuthorities()
+        ));
     }
     @Override
     public ResponseEntity<?> register(RegisterDTO registerDTO) {
@@ -97,17 +105,20 @@ public class StudentServiceImp implements StudentService {
         StudentMyCourseEntity myCourse=StudentMyCourseEntity.builder()
                 .coursesCount(0)
                 .student(studentEntity)
+                .myCourseItems(null)
                 .createdAt(LocalDateTime.now())
                 .build();
         this.myCourseRepo.save(myCourse);
         WishListEntity wishList=WishListEntity.builder()
                 .student(studentEntity)
+                .wishlistItem(null)
                 .createdAt(LocalDateTime.now())
                 .build();
         this.wishListRepo.save(wishList);
         CartEntity cart=CartEntity.builder()
                 .student(studentEntity)
                 .totalPrice(0.0)
+                .cartItems(null)
                 .createdAt(LocalDateTime.now())
                 .build();
         this.cartRepo.save(cart);
@@ -115,26 +126,22 @@ public class StudentServiceImp implements StudentService {
                 new UsernamePasswordAuthenticationToken(registerDTO.username(), registerDTO.password())
         );
         String token = jwtTokenService.generateJWTToken(authentication);
-        ResponseCookie cookie = ResponseCookie.from("jwt", token)
-                .httpOnly(true)
-                .secure(false)
-                .path("/")
-                .maxAge(7 * 24 * 60 * 60)
-                .sameSite("None")
-                .build();
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(Map.of("message", registerDTO));
+        HashMap<String,Object> data=new HashMap<>();
+        data.put("Id",studentEntity.getId());
+        data.put("Username",studentEntity.getUsername());
+        data.put("Grade",studentEntity.getGrade());
+        data.put("PhoneNumber",studentEntity.getPhoneNumber());
+        data.put("Email",studentEntity.getEmail());
+        data.put("BirthDate",studentEntity.getBirthDate());
+        data.put("Gender",studentEntity.getGender());
+        return ResponseEntity.ok(Map.of("token",token,"user",data));
+
     }
     @Override
-    public ResponseEntity<?> logout(HttpServletResponse response) {
-        Cookie cookie = new Cookie("jwt", null);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(false);
-        cookie.setPath("/");
-        cookie.setMaxAge(0);
-        response.addCookie(cookie);
-        return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
+    public ResponseEntity<?> logout() {
+        return ResponseEntity.ok(Map.of(
+                "message", "Logged out successfully"
+        ));
     }
     @Override
     public ResponseEntity<?> getStudent(Long id) {
@@ -173,76 +180,161 @@ public class StudentServiceImp implements StudentService {
         return ResponseEntity.ok("Profile picture changed!");
     }
     @Override
-    public ResponseEntity<?> getMyCourses(Long id, int size, int page) {
+    public ResponseEntity<?> getMyCourses(int size, int page) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() ||
+                auth.getPrincipal().equals("anonymousUser")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not logged in");
+        }
+        String username = auth.getName();
+        StudentEntity student = studentRepo.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+        Long id = student.getId();
         Pageable pageable = PageRequest.of(page, size, Sort.by("courseId").ascending());
         Page<StudentMyCourseItemEntity> items=this.myCoursesItemRepo.findAllByStudentId(id,pageable);
         if(items.isEmpty()){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No courses found!");
+            Map<String,Object> emptyResponse = new HashMap<>();
+            emptyResponse.put("items", Collections.emptyList());
+            emptyResponse.put("totalPrice", 0);
+            emptyResponse.put("totalcourses", 0);
+            emptyResponse.put("totalElements", 0);
+            emptyResponse.put("totalPages", 0);
+            emptyResponse.put("numberOfElements", 0);
+            emptyResponse.put("size", items.getSize());
+            emptyResponse.put("number", items.getNumber());
+            return ResponseEntity.ok(emptyResponse);
         }
         Page<Map<String,Object>> myCourses=items.map(
                 s->{
                     Map<String,Object> map=new HashMap<>();
-                    map.put("course name",s.getCourse().getName());
-                    map.put("course progress",s.getProgress());
-                    map.put("course teacher",s.getCourse().getTeacher().getUsername());
-                    map.put("course picture",s.getCourse().getImageUrl());
+                    map.put("coursename",s.getCourse().getName());
+                    map.put("id",s.getCourse().getId());
+                    map.put("courseprogress",s.getProgress());
+                    map.put("courserating",s.getCourse().getRating());
+                    map.put("totalNumberOfStudents",s.getCourse().getNumberOfStudents());
+                    map.put("description",s.getCourse().getDescription());
+                    map.put("coursepicture",s.getCourse().getImageUrl());
                     return map;
                 });
         return ResponseEntity.ok(myCourses);
     }
     @Override
-    public ResponseEntity<?> getMyCart(Long id, int size, int page) {
+    public ResponseEntity<?> getMyCart(int size, int page) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() ||
+                auth.getPrincipal().equals("anonymousUser")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not logged in");
+        }
+        String username = auth.getName();
+        StudentEntity student = studentRepo.findByUsername(username).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
         Pageable pageable = PageRequest.of(page, size, Sort.by("courseId").ascending());
-        Page<CartItemEntity> items=this.myCartItemRepo.findAllByStudentId(id,pageable);
+        Page<CartItemEntity> items=this.myCartItemRepo.findAllByStudentId(student.getId(),pageable);
         if(items.isEmpty()){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No courses found!");
+            Map<String,Object> emptyResponse = new HashMap<>();
+            emptyResponse.put("items", Collections.emptyList());
+            emptyResponse.put("totalPrice", 0);
+            emptyResponse.put("totalcourses", 0);
+            emptyResponse.put("totalElements", 0);
+            emptyResponse.put("totalPages", 0);
+            emptyResponse.put("numberOfElements", 0);
+            emptyResponse.put("size", items.getSize());
+            emptyResponse.put("number", items.getNumber());
+            return ResponseEntity.ok(emptyResponse);
         }
         Page<Map<String,Object>> cartItems=items.map(
                 s->{
                     Map<String,Object> map=new HashMap<>();
-                    map.put("course name",s.getCourse().getName());
+                    map.put("coursename",s.getCourse().getName());
                     map.put("price",s.getCourse().getPrice());
                     map.put("rate",s.getCourse().getRating());
                     map.put("duration",s.getCourse().getDuration());
-                    map.put("course teacher",s.getCourse().getTeacher().getUsername());
-                    map.put("course picture",s.getCourse().getImageUrl());
+                    map.put("totalNumberOfStudents",s.getCourse().getNumberOfStudents());
+                    map.put("description",s.getCourse().getDescription());
+                    map.put("id",s.getCourse().getId());
+                    map.put("courseteacher",s.getCourse().getTeacher().getUsername());
+                    map.put("coursepicture",s.getCourse().getImageUrl());
                     return map;
                 });
-        double totalPrice=items.stream().map(i->i.getCourse().getPrice()).mapToDouble(Double::doubleValue).sum();
+        Double totalPrice = myCartItemRepo.getTotalCartPrice(student.getId());
         long totalCourses=items.stream().count();
         Map<String, Object> response = new HashMap<>();
         response.put("items", cartItems);
         response.put("totalPrice", totalPrice);
         response.put("totalcourses", totalCourses);
+        response.put("totalElements", items.getTotalElements());
+        response.put("totalPages", items.getTotalPages());
+        response.put("numberOfElements", items.getNumberOfElements());
+        response.put("size", items.getSize());
+        response.put("number", items.getNumber());
         return ResponseEntity.ok(response);
     }
     @Override
-    public ResponseEntity<?> getMyWishList(Long id, int size, int page) {
+    public ResponseEntity<?> getMyWishList(int size, int page) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() ||
+                auth.getPrincipal().equals("anonymousUser")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not logged in");
+        }
+        String username = auth.getName();
+        StudentEntity student = studentRepo.findByUsername(username).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
         Pageable pageable = PageRequest.of(page, size, Sort.by("courseId").ascending());
-        Page<WishlistItemEntity> items=this.myWishListItemsRepo.findAllByStudentId(id,pageable);
+        Page<WishlistItemEntity> items=this.myWishListItemsRepo.findAllByStudentId(student.getId(),pageable);
         if(items.isEmpty()){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No courses found!");
+            Map<String,Object> emptyResponse = new HashMap<>();
+            emptyResponse.put("items", Collections.emptyList());
+            emptyResponse.put("totalPrice", 0);
+            emptyResponse.put("totalcourses", 0);
+            emptyResponse.put("totalElements", 0);
+            emptyResponse.put("totalPages", 0);
+            emptyResponse.put("numberOfElements", 0);
+            emptyResponse.put("size", items.getSize());
+            emptyResponse.put("number", items.getNumber());
+            return ResponseEntity.ok(emptyResponse);
         }
         Page<Map<String,Object>> wishListItems=items.map(
                 s->{
                     Map<String,Object> map=new HashMap<>();
-                    map.put("course name",s.getCourse().getName());
+                    map.put("coursename",s.getCourse().getName());
+                    map.put("paid",s.getCourse().getPaid());
                     map.put("price",s.getCourse().getPrice());
                     map.put("rate",s.getCourse().getRating());
+                    map.put("id",s.getCourse().getId());
                     map.put("duration",s.getCourse().getDuration());
-                    map.put("course teacher",s.getCourse().getTeacher().getUsername());
-                    map.put("course picture",s.getCourse().getImageUrl());
+                    map.put("courseteacher",s.getCourse().getTeacher().getUsername());
+                    map.put("totalNumberOfStudents",s.getCourse().getNumberOfStudents());
+                    map.put("description",s.getCourse().getDescription());
+                    map.put("coursepicture",s.getCourse().getImageUrl());
                     return map;
                 });
-        return ResponseEntity.ok(wishListItems);
+        Double totalPrice = myWishListItemsRepo.getTotalCartPrice(student.getId());
+        long totalCourses=items.stream().count();
+        Map<String, Object> response = new HashMap<>();
+        response.put("items", wishListItems);
+        response.put("totalPrice", totalPrice);
+        response.put("totalcourses", totalCourses);
+        response.put("totalElements", items.getTotalElements());
+        response.put("totalPages", items.getTotalPages());
+        response.put("numberOfElements", items.getNumberOfElements());
+        response.put("size", items.getSize());
+        response.put("number", items.getNumber());
+        return ResponseEntity.ok(response);
     }
     @Override
-    public ResponseEntity<?> addToMyCart(Long courseId,Long studentId) {
+    public ResponseEntity<?> addToMyCart(Long courseId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() ||
+                auth.getPrincipal().equals("anonymousUser")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not logged in");
+        }
+        String username = auth.getName();
+        StudentEntity student = studentRepo.findByUsername(username).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
         CourseEntity course=this.courseRepo.findById(courseId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
-        StudentEntity student=this.studentRepo.findById(studentId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
         CartEntity cart=this.cartRepo.findByStudent(student);
-        if(this.myCartItemRepo.existsByCourse(course)){
+        if(this.myCartItemRepo.existsByCourseAndStudent(course,student)){
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Course already exists");
+        }
+        if(this.myCoursesItemRepo.existsByCourseAndStudent(course,student)){
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("You already bought this course");
         }
         cart.setTotalPrice(cart.getTotalPrice()+course.getPrice());
         CartItemEntity item= CartItemEntity.builder()
@@ -257,12 +349,21 @@ public class StudentServiceImp implements StudentService {
         return ResponseEntity.ok("Added course to cart");
     }
     @Override
-    public ResponseEntity<?> addToMyWishList(Long courseId,Long studentId) {
+    public ResponseEntity<?> addToMyWishList(Long courseId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() ||
+                auth.getPrincipal().equals("anonymousUser")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not logged in");
+        }
+        String username = auth.getName();
+        StudentEntity student = studentRepo.findByUsername(username).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
         CourseEntity course=this.courseRepo.findById(courseId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
-        StudentEntity student=this.studentRepo.findById(studentId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
         WishListEntity wishList=this.wishListRepo.findByStudent(student);
-        if(this.myWishListItemsRepo.existsByCourse(course)){
+        if(this.myWishListItemsRepo.existsByCourseAndStudent(course,student)){
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Course already exists");
+        }
+        if(this.myCoursesItemRepo.existsByCourseAndStudent(course,student)){
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("You already bought this course");
         }
         WishlistItemEntity item= WishlistItemEntity.builder()
                 .student(student)
@@ -275,32 +376,61 @@ public class StudentServiceImp implements StudentService {
         return ResponseEntity.ok("Added course to wishList");
     }
     @Override
-    public ResponseEntity<?> addToMyCourses(Long courseId,Long studentId) {
-        CourseEntity course=this.courseRepo.findById(courseId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
-        StudentEntity student=this.studentRepo.findById(studentId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
-        StudentMyCourseEntity myCourse=this.myCourseRepo.findByStudent(student);
-        if(this.myCoursesItemRepo.existsByCourse(course)){
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Course already exists");
+    public ResponseEntity<?> addToMyCourses(CheckoutRequestDTO coursed) {
+        List<Long> ids=coursed.courses().stream()
+                .map(CoursesCheckOutReqDTO::courseId).toList();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() ||
+                auth.getPrincipal().equals("anonymousUser")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not logged in");
         }
-        myCourse.setCoursesCount(myCourse.getCoursesCount()+1);
-        StudentMyCourseItemEntity item= StudentMyCourseItemEntity.builder()
-                .student(student)
-                .course(course)
-                .createdAt(LocalDateTime.now())
-                .studentMyCourse(myCourse)
-                .progress(0.0)
-                .isCompleted(false)
-                .build();
-        myCourse.getMyCourseItems().add(item);
-        this.myCourseRepo.save(myCourse);
-        return ResponseEntity.ok("Added course to cart" );
+        String username = auth.getName();
+        StudentEntity student = studentRepo.findByUsername(username).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "student not found"));
+        List<CourseEntity> courses=new ArrayList<>();
+        for(Long id:ids){
+            courses.add(this.courseRepo.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found")));
+        }
+        StudentMyCourseEntity myCourse=this.myCourseRepo.findByStudent(student);
+
+        for(CourseEntity course:courses){
+            if(this.myCoursesItemRepo.existsByCourseAndStudent(course,student)){
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("Course already exists");
+            }
+        }
+        for(CourseEntity course:courses){
+            CourseProgressEntity progress=CourseProgressEntity.builder()
+                    .course(course)
+                    .student(student)
+                    .createdAt(LocalDateTime.now())
+                    .currentVideoIndex(0)
+                    .build();
+            this.courseProgressRepo.save(progress);
+            myCourse.setCoursesCount(myCourse.getCoursesCount()+1);
+            StudentMyCourseItemEntity item= StudentMyCourseItemEntity.builder()
+                    .student(student)
+                    .course(course)
+                    .createdAt(LocalDateTime.now())
+                    .studentMyCourse(myCourse)
+                    .progress(0.0)
+                    .isCompleted(false)
+                    .build();
+            myCourse.getMyCourseItems().add(item);
+            this.myCourseRepo.save(myCourse);
+        }
+        return ResponseEntity.ok("Added course to cart");
     }
     @Override
-    public ResponseEntity<?> deleteFromMyWishList(Long courseId, Long studentId) {
+    public ResponseEntity<?> deleteFromMyWishList(Long courseId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() ||
+                auth.getPrincipal().equals("anonymousUser")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not logged in");
+        }
+        String username = auth.getName();
+        StudentEntity student = studentRepo.findByUsername(username).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
         CourseEntity course=this.courseRepo.findById(courseId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
-        StudentEntity student=this.studentRepo.findById(studentId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
         WishListEntity wishList=this.wishListRepo.findByStudent(student);
-        if(!this.myWishListItemsRepo.existsByCourse(course)){
+        if(!this.myWishListItemsRepo.existsByCourseAndStudent(course,student)){
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Course doesnot exist");
         }
         WishlistItemEntity item =this.myWishListItemsRepo.findByCourse(course);
@@ -310,11 +440,17 @@ public class StudentServiceImp implements StudentService {
         return ResponseEntity.ok("Removed course from wishList");
     }
     @Override
-    public ResponseEntity<?> deleteFromMyCart(Long courseId, Long studentId) {
+    public ResponseEntity<?> deleteFromMyCart(Long courseId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() ||
+                auth.getPrincipal().equals("anonymousUser")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not logged in");
+        }
+        String username = auth.getName();
+        StudentEntity student = studentRepo.findByUsername(username).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
         CourseEntity course=this.courseRepo.findById(courseId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
-        StudentEntity student=this.studentRepo.findById(studentId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
         CartEntity cart=this.cartRepo.findByStudent(student);
-        if(!this.myCartItemRepo.existsByCourse(course)){
+        if(!this.myCartItemRepo.existsByCourseAndStudent(course,student)){
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Course doesnot exist");
         }
         CartItemEntity item =this.myCartItemRepo.findByCourse(course);
@@ -325,11 +461,18 @@ public class StudentServiceImp implements StudentService {
         return ResponseEntity.ok("Removed course from cart");
     }
     @Override
-    public ResponseEntity<?> deleteFromMyCourses(Long courseId, Long studentId) {
+    public ResponseEntity<?> deleteFromMyCourses(Long courseId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() ||
+                auth.getPrincipal().equals("anonymousUser")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not logged in");
+        }
+        String username = auth.getName();
+        StudentEntity student = studentRepo.findByUsername(username).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
         CourseEntity course=this.courseRepo.findById(courseId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
-        StudentEntity student=this.studentRepo.findById(studentId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
         StudentMyCourseEntity myCourse=this.myCourseRepo.findByStudent(student);
-        if(!this.myCoursesItemRepo.existsByCourse(course)){
+        this.courseProgressRepo.delete(this.courseProgressRepo.findByCourseAndStudent(course, student));
+        if(!this.myCoursesItemRepo.existsByCourseAndStudent(course,student)){
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Course doesnot exist");
         }
         StudentMyCourseItemEntity item =this.myCoursesItemRepo.findByCourse(course);
@@ -338,5 +481,42 @@ public class StudentServiceImp implements StudentService {
         myCourse.setCoursesCount(myCourse.getCoursesCount()-1);
         this.myCourseRepo.save(myCourse);
         return ResponseEntity.ok("Removed course from myCourses");
+    }
+    @Override
+    public ResponseEntity<?> deleteAllFromMyCart(){
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() ||
+                auth.getPrincipal().equals("anonymousUser")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not logged in");
+        }
+        String username = auth.getName();
+        StudentEntity student = studentRepo.findByUsername(username).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
+        CartEntity cart=this.cartRepo.findByStudent(student);
+        if(!this.myCartItemRepo.existsByStudent(student)){
+            System.out.println("no courses to delete");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("no courses");
+        }
+        cart.getCartItems().clear();
+        cart.setTotalPrice(0.0);
+        cartRepo.save(cart);
+        System.out.println("Done");
+        return ResponseEntity.ok("Removed all courses from cart");
+    }
+    @Override
+    public ResponseEntity<?> deleteAllFromMyWishList(){
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() ||
+                auth.getPrincipal().equals("anonymousUser")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not logged in");
+        }
+        String username = auth.getName();
+        StudentEntity student = studentRepo.findByUsername(username).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
+        WishListEntity wishlist=this.wishListRepo.findByStudent(student);
+        if(!this.myWishListItemsRepo.existsByStudent(student)){
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("no courses");
+        }
+        wishlist.getWishlistItem().clear();
+        wishListRepo.save(wishlist);
+        return ResponseEntity.ok("Removed course from cart");
     }
 }

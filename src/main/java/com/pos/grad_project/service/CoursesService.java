@@ -1,12 +1,8 @@
 package com.pos.grad_project.service;
 
 import com.pos.grad_project.model.dto.CoursesReqDTO;
-import com.pos.grad_project.model.dto.LoginDTO;
-import com.pos.grad_project.model.entity.CategoryEntity;
 import com.pos.grad_project.model.enums.Grade;
 import org.springframework.http.ResponseEntity;
-
-import java.util.Locale;
 
 public interface CoursesService {
     public ResponseEntity<?> allCourses(CoursesReqDTO coursesReqDTO,int page, int size);
@@ -15,6 +11,11 @@ public interface CoursesService {
     public ResponseEntity<?> teacherOfCourseInfo(Long id);
     public ResponseEntity<?> courseReview(Long id);
     public ResponseEntity<?> relatedCourses(Long id);
-    public ResponseEntity<?> findCoursesByFilters(Grade grade, double minPrice,double maxPrice, float rate, String name, String teacher, String category,int page,int size );
+    public ResponseEntity<?> findCoursesByFilters(String grade, Double minPrice,Double maxPrice, Float rate, String name, Long teacher, String category,int page,int size );
     public ResponseEntity<?> searchCourse(String name,int page, int size);
+    public ResponseEntity<?> showMaterial(long sectionId);
+    public ResponseEntity<?> addNote(String note,long sectionId,long studentId);
+    public ResponseEntity<?> updateNote(String note,long noteId,long studentId);
+    public ResponseEntity<?> deleteNote(long noteId,long studentId);
+    public ResponseEntity<?> getProgress(long studentId, long courseId);
 }

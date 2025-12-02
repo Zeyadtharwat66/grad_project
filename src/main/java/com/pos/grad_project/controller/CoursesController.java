@@ -1,5 +1,4 @@
 package com.pos.grad_project.controller;
-
 import com.pos.grad_project.AppConstants;
 import com.pos.grad_project.model.dto.CoursesReqDTO;
 import com.pos.grad_project.model.enums.Grade;
@@ -14,14 +13,9 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/courses")
 public class CoursesController {
     private final CoursesService coursesService;
-    @GetMapping("/all-courses")
-    public ResponseEntity<?> allCourses(@RequestParam Grade grade,@RequestParam String category,@RequestParam int page,@RequestParam int size) {
-        CoursesReqDTO coursesReqDTO = new CoursesReqDTO(grade,category);
-        return this.coursesService.allCourses(coursesReqDTO,page,size);
-    }
     @GetMapping("/filter-courses")
-    public ResponseEntity<?> findCourses(@RequestParam Grade grade,@RequestParam(defaultValue = "0") double minPrice,@RequestParam(defaultValue = "50000") double maxPrice,@RequestParam(defaultValue = "5") float rate,@RequestParam String name,@RequestParam String teacher,@RequestParam String category,@RequestParam int page,@RequestParam int size) {
-        return this.coursesService.findCoursesByFilters(grade,minPrice,maxPrice,rate,name,teacher,category,page,size);
+    public ResponseEntity<?> findCourses(@RequestParam(required = false) String grade,@RequestParam(required = false) Double priceMin,@RequestParam(required = false) Double priceMax,@RequestParam(required = false) Float rate,@RequestParam(required = false) String name,@RequestParam(required = false) Long teacher,@RequestParam(required = false) String category,@RequestParam(defaultValue = "0") int page,@RequestParam(defaultValue = "4") int size) {
+        return this.coursesService.findCoursesByFilters(grade,priceMin,priceMax,rate,name,teacher,category,page,size);
     }
     @GetMapping("/course-content/{id}")
     public ResponseEntity<?> courseContent(@PathVariable Long id){
@@ -47,5 +41,24 @@ public class CoursesController {
     public ResponseEntity<?> search(@PathVariable String name,@PathVariable int page,@PathVariable int size) {
         return this.coursesService.searchCourse(name,page,size);
     }
-
+    @GetMapping("/get-material/{sectionId}")
+    public ResponseEntity<?> getMaterial(@PathVariable Long sectionId){
+        return this.coursesService.showMaterial(sectionId);
+    }
+    @PostMapping("/add-note/{note}/{sectionId}/{studentId}")
+    public ResponseEntity<?> addNote(@PathVariable String note,@PathVariable Long sectionId,@PathVariable Long studentId){
+        return this.coursesService.addNote(note,sectionId,studentId);
+    }
+    @PutMapping("/update-note/{note}/{noteId}/{studentId}")
+    public ResponseEntity<?> update(@PathVariable String note,@PathVariable Long noteId,@PathVariable Long studentId){
+        return this.coursesService.updateNote(note,noteId,studentId);
+    }
+    @DeleteMapping("/delete-note/{noteId}/{studentId}")
+    public ResponseEntity<?> delete(@PathVariable Long noteId,@PathVariable Long studentId){
+        return this.coursesService.deleteNote(noteId,studentId);
+    }
+    @GetMapping("/get-progress/{studentId}/{courseId}")
+    public ResponseEntity<?> getProgress(@PathVariable Long studentId,@PathVariable Long courseId){
+        return this.coursesService.getProgress(studentId,courseId);
+    }
 }

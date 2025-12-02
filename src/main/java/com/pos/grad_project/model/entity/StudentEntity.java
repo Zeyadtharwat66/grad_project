@@ -70,6 +70,9 @@ public class StudentEntity {
     @OneToMany(mappedBy = "student",cascade = CascadeType.ALL)
     private List<CourseFeedbackEntity> feedbacks;
     @JsonManagedReference
+    @OneToMany(mappedBy = "student",cascade = CascadeType.ALL,orphanRemoval = true)
+    private List<NotesEntity> notes;
+    @JsonManagedReference
     @OneToMany(mappedBy = "student",cascade = CascadeType.ALL)
     private List<CourseProgressEntity> progress;
     @JsonManagedReference

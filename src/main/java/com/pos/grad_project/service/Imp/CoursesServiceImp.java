@@ -3,21 +3,17 @@ package com.pos.grad_project.service.Imp;
 import com.pos.grad_project.model.dto.CoursePageResDTO;
 import com.pos.grad_project.model.dto.CourseResDTO;
 import com.pos.grad_project.model.dto.CoursesReqDTO;
-import com.pos.grad_project.model.entity.CategoryEntity;
-import com.pos.grad_project.model.entity.CourseEntity;
-import com.pos.grad_project.model.entity.SectionEntity;
-import com.pos.grad_project.model.entity.TeacherEntity;
+import com.pos.grad_project.model.entity.*;
 import com.pos.grad_project.model.enums.Grade;
 import com.pos.grad_project.model.mapper.CourseMapper;
-import com.pos.grad_project.repository.CategoryRepo;
-import com.pos.grad_project.repository.CourseRepo;
-import com.pos.grad_project.repository.TeacherRepo;
+import com.pos.grad_project.repository.*;
 import com.pos.grad_project.service.CoursesService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -35,6 +31,10 @@ public class CoursesServiceImp implements CoursesService {
     private final TeacherRepo teacherRepo;
     private final CategoryRepo categoryRepo;
     private final CourseMapper courseMapper;
+    private final NotesRepo notesRepo;
+    private final SectionRepo sectionRepo;
+    private final StudentRepo studentRepo;
+    private final CourseProgressRepo courseProgressRepo;
     @Override
     public ResponseEntity<?> allCourses(CoursesReqDTO coursesReqDTO,int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
@@ -50,7 +50,6 @@ public class CoursesServiceImp implements CoursesService {
         response.put("totalPages", courseEntity.getTotalPages());
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
-
     @Override
     public ResponseEntity<?> courseContent(Long id) {
         CourseEntity courseEntity = this.courseRepo.findById(id)
@@ -85,7 +84,6 @@ public class CoursesServiceImp implements CoursesService {
         response.put("totalLength",duration);
         return ResponseEntity.ok(response);
     }
-
     @Override
     public ResponseEntity<?> courseInfo(Long id) {
         CourseEntity courseEntity = this.courseRepo.findById(id)
@@ -107,7 +105,6 @@ public class CoursesServiceImp implements CoursesService {
         response.put("rate",rate);
         return ResponseEntity.ok(response);
     }
-
     @Override
     public ResponseEntity<?> teacherOfCourseInfo(Long id) {
         CourseEntity courseEntity = this.courseRepo.findById(id)
@@ -126,7 +123,6 @@ public class CoursesServiceImp implements CoursesService {
         response.put("bio",bio);
         return ResponseEntity.ok(response);
     }
-
     @Override
     public ResponseEntity<?> courseReview(Long id) {
         CourseEntity courseEntity = this.courseRepo.findById(id)
@@ -141,7 +137,6 @@ public class CoursesServiceImp implements CoursesService {
                 }).collect(Collectors.toList());
         return ResponseEntity.ok(feedbacks);
     }
-
     @Override
     public ResponseEntity<?> relatedCourses(Long id) {
         CourseEntity courseEntity = this.courseRepo.findById(id)
@@ -156,23 +151,133 @@ public class CoursesServiceImp implements CoursesService {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(relatedCourses);
     }
-
     @Override
-    public ResponseEntity<?> findCoursesByFilters(Grade grade,double minPrice,double maxPrice,float rate,String name,String teacher,String category,int page, int size) {
-        TeacherEntity teacherEntity = this.teacherRepo.findByUsername(teacher);
-        CategoryEntity categoryEntity = this.categoryRepo.findByName(category);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
-        Page<CourseEntity> courses = this.courseRepo
-                .findByPriceBetweenAndRatingGreaterThanEqualAndCategoryAndGradeAndTeacherAndName(
-                        minPrice,maxPrice, rate, categoryEntity, grade, teacherEntity, name, pageable
-                );
-        return ResponseEntity.ok(courses);
+    public ResponseEntity<?> findCoursesByFilters(String grade,Double minPrice,Double maxPrice,Float rate,String name,Long teacher,String category,int page, int size) {
+        Specification<CourseEntity> spec = Specification.where(null);
+        Grade gradeEnum = null;
+        if (grade != null && !grade.isEmpty()) {
+            try {
+                gradeEnum = Grade.valueOf(grade.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest().body("Invalid grade value");
+            }
+        }
+        final Grade finalGradeEnum = gradeEnum;
+        if (gradeEnum != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("grade"), finalGradeEnum));
+        }
+        if (name != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.like(root.get("name"), "%" + name + "%"));
+        }
+        if (minPrice != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.greaterThanOrEqualTo(root.get("price"), minPrice));
+        }
+        if (maxPrice != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.lessThanOrEqualTo(root.get("price"), maxPrice));
+        }
+        if (rate != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.greaterThanOrEqualTo(root.get("rating"), rate));
+        }
+        if (teacher != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("teacher").get("id"), teacher));
+        }
+        if (category != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("category").get("name"), category));
+        }
+        Pageable pageable = PageRequest.of(page, size);
+        Page<CourseEntity> result = courseRepo.findAll(spec, pageable);
+        List<HashMap<String,Object>> response=result.stream()
+                .map(s->{
+                    HashMap<String,Object> x = new HashMap<>();
+                    x.put("id",s.getId());
+                    x.put("name",s.getName());
+                    x.put("description",s.getDescription());
+                    x.put("rating",s.getRating());
+                    x.put("teacher",s.getTeacher().getUsername());
+                    x.put("category",s.getCategory().getName());
+                    x.put("duration",s.getDuration());
+                    x.put("grade",s.getGrade());
+                    x.put("imageUrl",s.getImageUrl());
+                    x.put("numberOfStudents",s.getNumberOfStudents());
+                    x.put("paid",s.getPaid());
+                    x.put("price",s.getPrice());
+                    return x;
+                }).collect(Collectors.toList());
+        HashMap<String, Object> responseBody = new HashMap<>();
+        responseBody.put("courses", response);
+        responseBody.put("totalElements", result.getTotalElements());
+        responseBody.put("totalPages", result.getTotalPages());
+        responseBody.put("numberOfElements", result.getNumberOfElements());
+        responseBody.put("size", result.getSize());
+        responseBody.put("number", result.getNumber());
+        return ResponseEntity.ok(responseBody);
     }
-
     @Override
     public ResponseEntity<?> searchCourse(String name,int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
         Page<CourseEntity> result=this.courseRepo.findAllByName(name,pageable);
         return ResponseEntity.ok(result);
     }
+    @Override
+    public ResponseEntity<?> showMaterial(long sectionId) {
+        SectionEntity section=this.sectionRepo.findById(sectionId);
+        HashMap<String, Object> response = new HashMap<>();
+        response.put("material",section.getMaterial().getFileUrl());
+        response.put("type",section.getMaterial().getType());
+        response.put("title",section.getMaterial().getTitle());
+        return ResponseEntity.ok(response);
+    }
+    @Override
+    public ResponseEntity<?> addNote(String note, long sectionId, long studentId) {
+        StudentEntity student=this.studentRepo.findById(studentId);
+        SectionEntity section=this.sectionRepo.findById(sectionId);
+        if(this.notesRepo.existsByNote(note)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Note already exists");
+        }
+        NotesEntity newNote=NotesEntity.builder()
+                .note(note)
+                .student(student)
+                .section(section)
+                .build();
+        student.getNotes().add(newNote);
+        this.studentRepo.save(student);
+        return ResponseEntity.ok(newNote.getId());
+    }
+    @Override
+    public ResponseEntity<?> updateNote(String note, long noteId,long studentId) {
+        StudentEntity student=this.studentRepo.findById(studentId);
+        if(this.notesRepo.existsByNote(note)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("No Change Occurred");
+        }
+        NotesEntity theNote=this.notesRepo.findById(noteId);
+        student.getNotes().remove(theNote);
+        theNote.setNote(note);
+        student.getNotes().add(theNote);
+        this.studentRepo.save(student);
+        return ResponseEntity.ok(theNote.getId());
+    }
+    @Override
+    public ResponseEntity<?> deleteNote(long noteId,long studentId) {
+        StudentEntity student=this.studentRepo.findById(studentId);
+        NotesEntity theNote=this.notesRepo.findById(noteId);
+        student.getNotes().remove(theNote);
+        this.studentRepo.save(student);
+        return ResponseEntity.ok("Note Deleted Successfully");
+    }
+    @Override
+    public ResponseEntity<?> getProgress(long studentId, long courseId) {//lesa
+        StudentEntity student=this.studentRepo.findById(studentId);
+        CourseEntity course=this.courseRepo.findById(courseId);
+        CourseProgressEntity progress=this.courseProgressRepo.findByCourseAndStudent(course, student);
+        double myProgress=(progress.getCurrentVideoIndex()/course.getTotalLessons())*100;
+        return ResponseEntity.ok(myProgress);
+    }
+
 }

@@ -10,7 +10,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,8 +25,13 @@ public class TeacherServiceImp implements TeacherService {
         if(teachers.isEmpty()){
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No teachers found");
         }
-        List<String> teacherNames=teachers.stream()
-                .map(t->t.getUsername()).collect(Collectors.toList());
+        List<Map<String, Object>> teacherNames=teachers.stream()
+                .map(t-> {
+                    HashMap<String, Object> te = new HashMap<>();
+                    te.put("name",t.getUsername());
+                    te.put("id",t.getId());
+                    return te;
+                }).collect(Collectors.toList());
         return ResponseEntity.ok(teacherNames);
     }
 }

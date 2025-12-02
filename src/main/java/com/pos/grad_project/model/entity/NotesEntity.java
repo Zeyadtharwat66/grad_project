@@ -1,49 +1,44 @@
 package com.pos.grad_project.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.annotations.Where;
+
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "course_progress",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"student_id", "course_id"})
-        }
-)
+@Table(name = "notes")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CourseProgressEntity {
+@Where(clause= "deleted_at is null")
+public class NotesEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "course_progress_id")
+    @Column(name="note_id")
     private Long id;
-
+    private String note;
     @JsonBackReference
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "student_id", nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "student_id")
     private StudentEntity student;
-
     @JsonBackReference
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "course_id", nullable = false)
-    private CourseEntity course;
-
-    @Column(name = "current_video_index")
-    private Integer currentVideoIndex;
-    
+    @ManyToOne
+    @JoinColumn(name = "section_id")
+    private SectionEntity section;
     @CreationTimestamp
     @Column(name = "created_at")
     private LocalDateTime createdAt;
-
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+    @Column(name="deleted_at")
+    private LocalDateTime  deletedAt;
 }
-

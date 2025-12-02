@@ -1,6 +1,7 @@
 package com.pos.grad_project.repository;
 
 import com.pos.grad_project.model.entity.CourseEntity;
+import com.pos.grad_project.model.entity.StudentEntity;
 import com.pos.grad_project.model.entity.StudentMyCourseItemEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,6 +11,6 @@ import java.util.List;
 
 public interface MyCoursesItemRepo extends JpaRepository<StudentMyCourseItemEntity,Long> {
     Page<StudentMyCourseItemEntity> findAllByStudentId(long studentId, Pageable peagable);
-    Boolean existsByCourse(CourseEntity course);
+    Boolean existsByCourseAndStudent(CourseEntity course, StudentEntity student);
     StudentMyCourseItemEntity findByCourse(CourseEntity course);
 }
