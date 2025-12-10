@@ -5,9 +5,6 @@ import com.pos.grad_project.model.enums.Gender;
 import com.pos.grad_project.model.enums.Grade;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -73,8 +70,14 @@ public class StudentEntity {
     @OneToMany(mappedBy = "student",cascade = CascadeType.ALL,orphanRemoval = true)
     private List<NotesEntity> notes;
     @JsonManagedReference
+    @OneToMany(mappedBy = "student",cascade = CascadeType.ALL,orphanRemoval = true)
+    private List<VideoCommentEntity> videoComment;
+    @JsonManagedReference
     @OneToMany(mappedBy = "student",cascade = CascadeType.ALL)
     private List<CourseProgressEntity> progress;
+    @JsonManagedReference
+    @OneToMany(mappedBy = "student",cascade = CascadeType.ALL)
+    private List<StudentVideoProgressEntity> videoProgress;
     @JsonManagedReference
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL)
     private List<Student_StudentNotificationEntity> studentNotifications;

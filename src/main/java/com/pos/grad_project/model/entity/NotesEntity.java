@@ -10,6 +10,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.Where;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 @Entity
@@ -29,10 +30,11 @@ public class NotesEntity {
     @ManyToOne
     @JoinColumn(name = "student_id")
     private StudentEntity student;
+    private Duration time;
     @JsonBackReference
     @ManyToOne
-    @JoinColumn(name = "section_id")
-    private SectionEntity section;
+    @JoinColumn(name = "video_id")
+    private VideoEntity videos;
     @CreationTimestamp
     @Column(name = "created_at")
     private LocalDateTime createdAt;

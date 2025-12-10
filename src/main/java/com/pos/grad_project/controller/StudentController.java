@@ -1,5 +1,6 @@
 package com.pos.grad_project.controller;
 import com.pos.grad_project.model.dto.CheckoutRequestDTO;
+import com.pos.grad_project.model.dto.CommentReqDTO;
 import com.pos.grad_project.model.dto.CoursesCheckOutReqDTO;
 import com.pos.grad_project.model.dto.CoursesReqDTO;
 import com.pos.grad_project.service.StudentService;
@@ -71,5 +72,13 @@ public class StudentController {
     @DeleteMapping("/delete-all-from-my-wishlist")
     public ResponseEntity<?> deleteAllFromMyWishList() {
         return this.studentService.deleteAllFromMyWishList();
+    }
+    @PostMapping("/add-comment")
+    public ResponseEntity<?> addComment(@RequestBody CommentReqDTO commentReqDTO ){
+        return this.studentService.addComment(commentReqDTO);
+    }
+    @GetMapping("/get-comment/{videoId}")
+    public ResponseEntity<?> getComment(@PathVariable Long videoId){
+        return this.studentService.getComments(videoId);
     }
 }

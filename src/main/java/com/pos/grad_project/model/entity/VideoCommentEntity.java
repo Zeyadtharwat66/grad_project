@@ -2,7 +2,7 @@ package com.pos.grad_project.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
+        import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,16 +13,16 @@ import org.hibernate.annotations.Where;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "courses_feedback")
+@Table(name = "video_comment")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Where(clause= "deleted_at is null")
-public class CourseFeedbackEntity {
+public class VideoCommentEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="courses_feedback_id")
+    @Column(name="video_comment_id")
     private Long id;
     private String comment;
     private Float rating;
@@ -36,8 +36,8 @@ public class CourseFeedbackEntity {
     private LocalDateTime  deletedAt;
     @JsonBackReference
     @ManyToOne
-    @JoinColumn(name = "course_id", nullable = false)
-    private CourseEntity course;
+    @JoinColumn(name = "video_id", nullable = false)
+    private VideoEntity video;
     @JsonBackReference
     @ManyToOne
     @JoinColumn(name = "student_id", nullable = false)

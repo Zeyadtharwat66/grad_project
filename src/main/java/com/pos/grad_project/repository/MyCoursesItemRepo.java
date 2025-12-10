@@ -12,5 +12,5 @@ import java.util.List;
 public interface MyCoursesItemRepo extends JpaRepository<StudentMyCourseItemEntity,Long> {
     Page<StudentMyCourseItemEntity> findAllByStudentId(long studentId, Pageable peagable);
     Boolean existsByCourseAndStudent(CourseEntity course, StudentEntity student);
-    StudentMyCourseItemEntity findByCourse(CourseEntity course);
+    StudentMyCourseItemEntity findByCourseIdAndStudentId(long courseId, long studentId);
 }

@@ -88,7 +88,9 @@ public class CourseEntity {
     @JsonManagedReference
     @OneToMany(mappedBy = "course",cascade = CascadeType.ALL)
     private List<CourseFeedbackEntity> feedbacks;
-
+    @JsonManagedReference
+    @OneToMany(mappedBy = "course",cascade = CascadeType.ALL)
+    private List<StudentVideoProgressEntity> videoProgress;
     @JsonManagedReference
     @OneToMany(mappedBy = "course",cascade = CascadeType.ALL)
     private List<CourseProgressEntity> progress;

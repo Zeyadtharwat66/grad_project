@@ -8,8 +8,8 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface CourseFeedbackRepo extends JpaRepository<CourseFeedbackEntity,Long> {
-    @Query(value = "SELECT * FROM courses_feedback ORDER BY RAND() LIMIT 4", nativeQuery = true)
-    List<CourseFeedbackEntity> findRandom4ByCourseId();
+    @Query(value = "SELECT * FROM courses_feedback ORDER BY RANDOM() LIMIT 6", nativeQuery = true)
+    List<CourseFeedbackEntity> findRandom6();
     long findCourseIdById(Long id);
     long findStudentIdById(Long id);
     long countByCourseId(Long courseId);

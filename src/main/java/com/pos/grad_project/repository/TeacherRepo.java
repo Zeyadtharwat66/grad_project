@@ -3,6 +3,7 @@ package com.pos.grad_project.repository;
 import com.pos.grad_project.model.entity.StudentEntity;
 import com.pos.grad_project.model.entity.TeacherEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
@@ -13,4 +14,6 @@ public interface TeacherRepo extends JpaRepository<TeacherEntity,Long> {
     TeacherEntity findByUsername(String name);
     public TeacherEntity findById(long id);
     List<TeacherEntity> findBySpecialization(String specialization);
+    @Query("SELECT s.profilePictureUrl FROM TeacherEntity s")
+    List<String> findAllProfile_picture_url();
 }

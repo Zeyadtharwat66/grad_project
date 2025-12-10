@@ -13,20 +13,24 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/home")
 public class HomeController {
     private final HomeService homeService;
-    @GetMapping("top2-teachers")
+    @GetMapping("/top2-teachers")
     public ResponseEntity<?> top2(){
         return this.homeService.top2Teachers();
     }
-    @GetMapping("top6courses")
+    @GetMapping("/top6courses")
     public ResponseEntity<?> top6Courses() {
         return this.homeService.top6Courses();
     }
     @GetMapping("/random4")
-    public ResponseEntity<?> random4(){
-        return this.homeService.show4Feedback();
+    public ResponseEntity<?> random6(){
+        return this.homeService.show6Feedback();
     }
     @GetMapping("/statistics")
     public ResponseEntity<?> statistics(){
         return this.homeService.statistics();
+    }
+    @GetMapping("/imgs")
+    public ResponseEntity<?> imgs(){
+        return this.homeService.getImages();
     }
 }

@@ -1,9 +1,6 @@
 package com.pos.grad_project.service;
 
-import com.pos.grad_project.model.dto.CheckoutRequestDTO;
-import com.pos.grad_project.model.dto.CoursesCheckOutReqDTO;
-import com.pos.grad_project.model.dto.LoginDTO;
-import com.pos.grad_project.model.dto.RegisterDTO;
+import com.pos.grad_project.model.dto.*;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.ResponseEntity;
 
@@ -28,5 +25,6 @@ public interface StudentService {
     public ResponseEntity<?> deleteFromMyCourses(Long courseId);
     public ResponseEntity<?> deleteAllFromMyCart();
     public ResponseEntity<?> deleteAllFromMyWishList();
-
+    public ResponseEntity<?> addComment(CommentReqDTO commentReqDTO);
+    public ResponseEntity<?> getComments(Long videoId);
 }

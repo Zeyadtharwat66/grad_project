@@ -1,11 +1,12 @@
 package com.pos.grad_project.controller;
 import com.pos.grad_project.AppConstants;
-import com.pos.grad_project.model.dto.CoursesReqDTO;
-import com.pos.grad_project.model.enums.Grade;
+import com.pos.grad_project.model.dto.NoteReqDTO;
 import com.pos.grad_project.service.CoursesService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.Duration;
 
 @AllArgsConstructor
 @RestController
@@ -21,21 +22,29 @@ public class CoursesController {
     public ResponseEntity<?> courseContent(@PathVariable Long id){
         return this.coursesService.courseContent(id);
     }
-    @GetMapping("/course-info/{id}")
-    public ResponseEntity<?> courseInfo(@PathVariable Long id){
-        return this.coursesService.courseInfo(id);
-    }
+//    @GetMapping("/course-info/{id}")
+//    public ResponseEntity<?> courseInfo(@PathVariable Long id){
+//        return this.coursesService.courseInfo(id);
+//    }
     @GetMapping("/teacher-of-course-info/{id}")
     public ResponseEntity<?> teacherOfCourseInfo(@PathVariable Long id){
         return this.coursesService.teacherOfCourseInfo(id);
     }
     @GetMapping("/course-reviews/{id}")
     public ResponseEntity<?> courseReviews(@PathVariable Long id){
-        return this.coursesService.courseReview(id);
+        return this.coursesService.getCourseReviews(id);
     }
     @GetMapping("/related-courses/{id}")
     public ResponseEntity<?> relatedCourses(@PathVariable Long id){
         return this.coursesService.relatedCourses(id);
+    }
+    @PostMapping("/add-feedback")
+    public ResponseEntity<?> addCourseReviews(@RequestParam Long id,@RequestParam String comment,@RequestParam(defaultValue = "0.0")float rate) {
+        return this.coursesService.addCourseReviews(id,comment,rate);
+    }
+    @GetMapping("/video/{id}")
+    public ResponseEntity<?> video(@PathVariable Long id){
+        return this.coursesService.showVideosPage(id);
     }
     @GetMapping("/search/{name}/{page}/{size}")
     public ResponseEntity<?> search(@PathVariable String name,@PathVariable int page,@PathVariable int size) {
@@ -45,13 +54,17 @@ public class CoursesController {
     public ResponseEntity<?> getMaterial(@PathVariable Long sectionId){
         return this.coursesService.showMaterial(sectionId);
     }
-    @PostMapping("/add-note/{note}/{sectionId}/{studentId}")
-    public ResponseEntity<?> addNote(@PathVariable String note,@PathVariable Long sectionId,@PathVariable Long studentId){
-        return this.coursesService.addNote(note,sectionId,studentId);
+    @PostMapping("/add-note/{id}")
+    public ResponseEntity<?> addNote(@RequestBody NoteReqDTO noteReqDTO,@PathVariable long id){
+        return this.coursesService.addNote(noteReqDTO);
     }
     @PutMapping("/update-note/{note}/{noteId}/{studentId}")
     public ResponseEntity<?> update(@PathVariable String note,@PathVariable Long noteId,@PathVariable Long studentId){
         return this.coursesService.updateNote(note,noteId,studentId);
+    }
+    @GetMapping("/get-note/{videoId}")
+    public ResponseEntity<?> getNote(@PathVariable Long videoId){
+        return this.coursesService.getNote(videoId);
     }
     @DeleteMapping("/delete-note/{noteId}/{studentId}")
     public ResponseEntity<?> delete(@PathVariable Long noteId,@PathVariable Long studentId){
@@ -61,4 +74,9 @@ public class CoursesController {
     public ResponseEntity<?> getProgress(@PathVariable Long studentId,@PathVariable Long courseId){
         return this.coursesService.getProgress(studentId,courseId);
     }
+    @PostMapping("/complete-video/{id}")
+    public ResponseEntity<?> completeVideo(@PathVariable Long id){
+        return this.coursesService.completeVideo(id);
+    }
+
 }

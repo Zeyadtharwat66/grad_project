@@ -14,7 +14,7 @@ import java.util.List;
 
 public interface CourseRepo extends JpaRepository<CourseEntity,Long>, JpaSpecificationExecutor<CourseEntity> {
     Page<CourseEntity> findByCategoryAndGrade(CategoryEntity category, Grade grade,Pageable pageable);
-    List<CourseEntity> findByCategoryAndGrade(CategoryEntity category, Grade grade);
+    List<CourseEntity> findTop3ByCategoryAndGradeAndIdNot(CategoryEntity category, Grade grade, Long id);
     List<CourseEntity> findTop6ByOrderByNumberOfStudentsDesc();
     long countByDeletedAtIsNull();
     Page<CourseEntity> findAllByName(String name,Pageable pageable);

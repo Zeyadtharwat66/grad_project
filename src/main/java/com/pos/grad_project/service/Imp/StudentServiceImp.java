@@ -25,6 +25,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -46,15 +48,15 @@ public class StudentServiceImp implements StudentService {
     private final WishListRepo wishListRepo;
     private final MyCourseRepo myCourseRepo;
     private final CourseProgressRepo courseProgressRepo;
+    private final VideoCommentsRepo videoCommentRepo;
+    private final VideosRepo videosRepo;
+    private final StudentVideoProgressRepo studentVideoProgressRepo;
     @Override
     public ResponseEntity<?> login(LoginDTO loginDTO) {
-
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginDTO.username(), loginDTO.password())
         );
-
         String token = jwtTokenService.generateJWTToken(authentication);
-
         StudentEntity studentEntity = studentRepo.findByUsername(loginDTO.username())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
         HashMap<String,Object> user = new HashMap<>();
@@ -65,7 +67,6 @@ public class StudentServiceImp implements StudentService {
         user.put("email", studentEntity.getEmail());
         user.put("birthDate", studentEntity.getBirthDate());
         user.put("gender", studentEntity.getGender());
-
         return ResponseEntity.ok(Map.of(
                 "token", token,
                 "user", user
@@ -211,9 +212,14 @@ public class StudentServiceImp implements StudentService {
                     map.put("id",s.getCourse().getId());
                     map.put("courseprogress",s.getProgress());
                     map.put("courserating",s.getCourse().getRating());
+                    map.put("isCompleted",s.getIsCompleted());
                     map.put("totalNumberOfStudents",s.getCourse().getNumberOfStudents());
                     map.put("description",s.getCourse().getDescription());
                     map.put("coursepicture",s.getCourse().getImageUrl());
+                    map.put("grade",s.getCourse().getGrade());
+                    map.put("track",s.getCourse().getCategory().getName());
+                    map.put("teacherName",s.getCourse().getTeacher().getUsername());
+                    map.put("numberOfVideos",s.getCourse().getTotalLessons());
                     return map;
                 });
         return ResponseEntity.ok(myCourses);
@@ -391,7 +397,6 @@ public class StudentServiceImp implements StudentService {
             courses.add(this.courseRepo.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found")));
         }
         StudentMyCourseEntity myCourse=this.myCourseRepo.findByStudent(student);
-
         for(CourseEntity course:courses){
             if(this.myCoursesItemRepo.existsByCourseAndStudent(course,student)){
                 return ResponseEntity.status(HttpStatus.CONFLICT).body("Course already exists");
@@ -416,7 +421,18 @@ public class StudentServiceImp implements StudentService {
                     .build();
             myCourse.getMyCourseItems().add(item);
             this.myCourseRepo.save(myCourse);
+            for(VideoEntity video:course.getVideos()){
+                StudentVideoProgressEntity prog=StudentVideoProgressEntity.builder()
+                        .student(student)
+                        .completed(false)
+                        .video(video)
+                        .course(course)
+                        .createdAt(LocalDateTime.now())
+                        .build();
+                this.studentVideoProgressRepo.save(prog);
+            }
         }
+
         return ResponseEntity.ok("Added course to cart");
     }
     @Override
@@ -475,7 +491,7 @@ public class StudentServiceImp implements StudentService {
         if(!this.myCoursesItemRepo.existsByCourseAndStudent(course,student)){
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Course doesnot exist");
         }
-        StudentMyCourseItemEntity item =this.myCoursesItemRepo.findByCourse(course);
+        StudentMyCourseItemEntity item =this.myCoursesItemRepo.findByCourseIdAndStudentId(course.getId(),student.getId());
         item.setDeletedAt(LocalDateTime.now());
         myCourse.getMyCourseItems().remove(item);
         myCourse.setCoursesCount(myCourse.getCoursesCount()-1);
@@ -499,7 +515,6 @@ public class StudentServiceImp implements StudentService {
         cart.getCartItems().clear();
         cart.setTotalPrice(0.0);
         cartRepo.save(cart);
-        System.out.println("Done");
         return ResponseEntity.ok("Removed all courses from cart");
     }
     @Override
@@ -518,5 +533,58 @@ public class StudentServiceImp implements StudentService {
         wishlist.getWishlistItem().clear();
         wishListRepo.save(wishlist);
         return ResponseEntity.ok("Removed course from cart");
+    }
+    @Override
+    public ResponseEntity<?> addComment(CommentReqDTO commentReqDTO) {
+        String comment=commentReqDTO.comment();
+        float rate=commentReqDTO.rate();
+        System.out.println(comment);
+        System.out.println(commentReqDTO.lessonId());
+        if(this.videoCommentRepo.existsByComment(comment)){
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+        long videoId=commentReqDTO.lessonId();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() ||
+                auth.getPrincipal().equals("anonymousUser")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not logged in");
+        }
+        String username = auth.getName();
+        StudentEntity student=this.studentRepo.findByUsername(username).orElseThrow(()->new RuntimeException("Student not found"));
+        VideoEntity video=this.videosRepo.findById(videoId).orElseThrow(()->new RuntimeException("Video not found"));
+        VideoCommentEntity newComment=VideoCommentEntity.builder()
+                .comment(comment)
+                .student(student)
+                .video(video)
+                .createdAt(LocalDateTime.now())
+                .rating(rate)
+                .build();
+        student.getVideoComment().add(newComment);
+        this.studentRepo.save(student);
+        HashMap<String ,Object> response = new HashMap<>();
+        response.put("text",newComment.getComment());
+        response.put("videoId",videoId);
+        response.put("username",username);
+        response.put("time",newComment.getCreatedAt());
+        response.put("image",student.getProfilePictureUrl());
+        response.put("commentId",newComment.getId());
+        return ResponseEntity.ok(response);
+    }
+    @Override
+    public ResponseEntity<?> getComments(Long videoId) {
+        List<VideoCommentEntity> comments=this.videoCommentRepo.findByVideoId(videoId);
+        List<HashMap<String, Object>> responseBody = comments.stream().map(
+                s->{
+                    HashMap<String, Object> responseBodyMap = new HashMap<>();
+                    responseBodyMap.put("username",s.getStudent().getUsername());
+                    responseBodyMap.put("image",s.getStudent().getProfilePictureUrl());
+                    responseBodyMap.put("time",s.getCreatedAt());
+                    responseBodyMap.put("text",s.getComment());
+                    responseBodyMap.put("id",s.getId());
+                    responseBodyMap.put("rate",s.getRating());
+                    return responseBodyMap;
+                }
+        ).toList();
+        return ResponseEntity.ok(responseBody);
     }
 }

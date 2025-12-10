@@ -46,20 +46,25 @@ public class VideoEntity {
     private LocalDateTime updatedAt;
     @Column(name="deleted_at")
     private LocalDateTime  deletedAt;
-
+    @JsonManagedReference
+    @OneToMany(mappedBy = "video",cascade = CascadeType.ALL)
+    private List<StudentVideoProgressEntity> videoProgress;
     @JsonManagedReference
     @OneToMany(mappedBy = "video",cascade = CascadeType.ALL)
     private List<AssignmentSubmissionEntity> studentAssignments;
-
+    @JsonManagedReference
+    @OneToMany(mappedBy = "video",cascade = CascadeType.ALL)
+    private List<VideoCommentEntity> videoComment;
     @JsonManagedReference
     @OneToOne(mappedBy = "video",cascade = CascadeType.ALL)
     private TeacherAssignmentEntity teacherAssignments;
-
     @JsonBackReference
     @ManyToOne
     @JoinColumn(name = "course_id",nullable = false)
     private CourseEntity course;
-
+    @JsonManagedReference
+    @OneToMany(mappedBy = "videos",cascade = CascadeType.ALL,orphanRemoval = true)
+    private List<NotesEntity> notes;
     @JsonBackReference
     @ManyToOne
     @JoinColumn(name = "section_id")

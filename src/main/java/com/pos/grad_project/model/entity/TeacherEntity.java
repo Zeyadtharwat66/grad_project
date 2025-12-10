@@ -57,8 +57,8 @@ public class TeacherEntity {
     private Double rate;
     private String bio;
     @Lob //long object
-    @Column(columnDefinition = "LONGBLOB",name="validate_teacher")
-    private byte[] validateTeacher;
+//    @Column(columnDefinition = "LONGBLOB",name="validate_teacher")
+//    private byte[] validateTeacher;
     @CreationTimestamp
     @Column(name = "created_at")
     private LocalDateTime createdAt;
