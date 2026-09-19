@@ -1,4 +1,10 @@
 package com.pos.grad_project.model.dto;
 
-public record CoursesCheckOutReqDTO(Long courseId,Long price) {
-}
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+
+public record CoursesCheckOutReqDTO(
+        @NotNull(message = "course id is required")
+        @Positive(message = "course id must be positive")
+        Long courseId
+) {}
