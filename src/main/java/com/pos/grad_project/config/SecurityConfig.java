@@ -52,8 +52,7 @@ public class SecurityConfig {
                                 "/courses/teacher-of-course-info/**",
                                 "/courses/course-reviews/**",
                                 "/courses/related-courses/**",
-                                "/courses/search/**",
-                                "/courses/get-material/**"
+                                "/courses/search/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
