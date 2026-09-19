@@ -1,6 +1,5 @@
 package com.pos.grad_project.controller;
 
-import com.pos.grad_project.AppConstants;
 import com.pos.grad_project.model.dto.NoteReqDTO;
 import com.pos.grad_project.model.dto.UpdateNoteRequest;
 import com.pos.grad_project.service.CoursesService;
@@ -11,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 
 @AllArgsConstructor
 @RestController
-@CrossOrigin(origins = AppConstants.frontEnd)
 @RequestMapping("/courses")
 public class CoursesController {
     private final CoursesService coursesService;
