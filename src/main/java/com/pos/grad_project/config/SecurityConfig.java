@@ -15,6 +15,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import static org.springframework.security.config.Customizer.withDefaults;
+
 @Configuration
 @EnableMethodSecurity
 @RequiredArgsConstructor
@@ -26,7 +28,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                .cors(AbstractHttpConfigurer::disable)
+                .cors(withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
                 .httpBasic(AbstractHttpConfigurer::disable)
@@ -34,29 +36,25 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
-                        // Authentication
                         .requestMatchers("/auth/login", "/auth/register").permitAll()
-
-                        // Public course browsing
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**"
+                        ).permitAll()
+                        .requestMatchers(
+                                "/home/**",
+                                "/teachers/**"
+                        ).permitAll()
                         .requestMatchers(
                                 "/courses/filter-courses",
                                 "/courses/course-content/**",
                                 "/courses/teacher-of-course-info/**",
                                 "/courses/course-reviews/**",
                                 "/courses/related-courses/**",
-                                "/courses/video/**",
                                 "/courses/search/**",
                                 "/courses/get-material/**"
                         ).permitAll()
-
-                        // API documentation / health-style public endpoints
-                        .requestMatchers(
-                                "/swagger-ui/**",
-                                "/swagger-ui.html",
-                                "/v3/api-docs/**"
-                        ).permitAll()
-
-                        // Everything else requires authentication
                         .anyRequest().authenticated()
                 )
                 .build();
