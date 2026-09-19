@@ -9,9 +9,11 @@ import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.validation.annotation.Validated;
 
 @AllArgsConstructor
 @RestController
+@Validated
 @RequestMapping("/courses")
 public class CoursesController {
     private final CoursesService coursesService;
