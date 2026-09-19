@@ -7,6 +7,8 @@ import com.pos.grad_project.model.dto.CheckoutRequestDTO;
 import com.pos.grad_project.model.dto.CommentReqDTO;
 import com.pos.grad_project.service.StudentService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -40,17 +42,17 @@ public class StudentController {
     }
 
     @GetMapping("/get-my-courses/{size}/{page}")
-    public ResponseEntity<?> getMyCourses(@PathVariable int size, @PathVariable int page) {
+    public ResponseEntity<?> getMyCourses(@PathVariable @Min(1) @Max(100) int size, @PathVariable @Min(0) int page) {
         return studentService.getMyCourses(size, page);
     }
 
     @GetMapping("/get-my-wishList/{size}/{page}")
-    public ResponseEntity<?> getMyWishList(@PathVariable int size, @PathVariable int page) {
+    public ResponseEntity<?> getMyWishList(@PathVariable @Min(1) @Max(100) int size, @PathVariable @Min(0) int page) {
         return studentService.getMyWishList(size, page);
     }
 
     @GetMapping("/get-my-cart/{size}/{page}")
-    public ResponseEntity<?> getMyCart(@PathVariable int size, @PathVariable int page) {
+    public ResponseEntity<?> getMyCart(@PathVariable @Min(1) @Max(100) int size, @PathVariable @Min(0) int page) {
         return studentService.getMyCart(size, page);
     }
 
