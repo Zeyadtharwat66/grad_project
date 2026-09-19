@@ -298,16 +298,18 @@ public class CoursesServiceImp implements CoursesService {
         return ResponseEntity.ok(response);
     }
     @Override
-    public ResponseEntity<?> showVideosPage(long courseId){
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() ||
-                auth.getPrincipal().equals("anonymousUser")) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not logged in");
+    public ResponseEntity<?> showVideosPage(long courseId) {
+        StudentEntity student = getAuthenticatedStudent();
+        long studentId = student.getId();
+
+        CourseEntity course = this.courseRepo.findById(courseId);
+        if (course == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found");
         }
-        String username = auth.getName();
-        StudentEntity student=this.studentRepo.findByUsername(username).orElseThrow(()->new RuntimeException("Student not found"));
-        long studentId=student.getId();
-        CourseEntity course=this.courseRepo.findById(courseId);
+        if (!myCoursesItemRepo.existsByCourseAndStudent(course, student)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You are not enrolled in this course");
+        }
+
         List<Map<String, Object>> sectionInfoList = course.getSections()
                 .stream()
                 .map(section -> {
@@ -320,7 +322,7 @@ public class CoursesServiceImp implements CoursesService {
                                 videoMap.put("duration", GeneralService.formatDuration(video.getDuration()));
                                 videoMap.put("id", video.getId());
                                 videoMap.put("url",video.getUrl());
-                                videoMap.put("isCompleted",this.studentVideoProgressRepo.findByVideoIdAndStudentId(video.getId(), studentId).isCompleted());
+                                videoMap.put("isCompleted",Optional.ofNullable(this.studentVideoProgressRepo.findByVideoIdAndStudentId(video.getId(), studentId)).map(StudentVideoProgressEntity::isCompleted).orElse(false));
                                 videoMap.put("description",video.getDescription());
                                 return videoMap;
                             })
