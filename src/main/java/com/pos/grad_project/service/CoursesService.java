@@ -2,6 +2,7 @@ package com.pos.grad_project.service;
 
 import com.pos.grad_project.model.dto.CoursesReqDTO;
 import com.pos.grad_project.model.dto.NoteReqDTO;
+import com.pos.grad_project.model.dto.UpdateNoteRequest;
 import org.springframework.http.ResponseEntity;
 
 import java.time.Duration;
@@ -19,9 +20,9 @@ public interface CoursesService {
     public ResponseEntity<?> searchCourse(String name,int page, int size);
     public ResponseEntity<?> showMaterial(long sectionId);
     public ResponseEntity<?> addNote(NoteReqDTO noteReqDTO);
-    public ResponseEntity<?> updateNote(String note,long noteId,long studentId);
-    public ResponseEntity<?> deleteNote(long noteId,long studentId);
-    public ResponseEntity<?> getProgress(long studentId, long courseId);
+    ResponseEntity<?> updateNote(UpdateNoteRequest request, long noteId);
+    ResponseEntity<?> deleteNote(long noteId);
+    ResponseEntity<?> getProgress(long courseId);
     public ResponseEntity<?> getNote(long videoId);
     public ResponseEntity<?> completeVideo(long id);
 }
