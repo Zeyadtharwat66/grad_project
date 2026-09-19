@@ -53,8 +53,10 @@ public class JWTTokenServiceImp implements JWTTokenService {
         try {
             Jwt jwt = decoder.decode(token);
             String username = jwt.getSubject();
-            String scope = (String) jwt.getClaim("scope");
-            List<GrantedAuthority> authorities = Arrays.stream(scope.split(" "))
+            String scope = jwt.getClaimAsString("scope");
+            List<GrantedAuthority> authorities = scope == null || scope.isBlank()
+                    ? List.of()
+                    : Arrays.stream(scope.split(" "))
                     .map(SimpleGrantedAuthority::new)
                     .collect(Collectors.toList());
             return new UsernamePasswordAuthenticationToken(username, null, authorities);
