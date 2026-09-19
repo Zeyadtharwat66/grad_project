@@ -157,26 +157,29 @@ public class CoursesServiceImp implements CoursesService {
         return ResponseEntity.ok(feedbacks);
     }
     @Override
-    public ResponseEntity<?> addCourseReviews(Long id,String comment,float rate) {
+    public ResponseEntity<?> addCourseReviews(Long id, String comment, float rate) {
         CourseEntity courseEntity = this.courseRepo.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "course not found"));
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() ||
-                auth.getPrincipal().equals("anonymousUser")) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not logged in");
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
+        StudentEntity student = getAuthenticatedStudent();
+
+        if (!myCoursesItemRepo.existsByCourseAndStudent(courseEntity, student)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You must enroll in the course before reviewing it");
         }
-        String username = auth.getName();
-        StudentEntity student = studentRepo.findByUsername(username)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+        if (rate < 0 || rate > 5) {
+            return ResponseEntity.badRequest().body("Rating must be between 0 and 5");
+        }
+        if (comment == null || comment.isBlank()) {
+            return ResponseEntity.badRequest().body("Comment is required");
+        }
+
         CourseFeedbackEntity courseFeedbackEntity = CourseFeedbackEntity.builder()
                 .course(courseEntity)
-                .comment(comment)
+                .comment(comment.trim())
                 .rating(rate)
                 .student(student)
-                .createdAt(LocalDateTime.now())
                 .build();
         this.feedbackRepo.save(courseFeedbackEntity);
-        return ResponseEntity.ok(null);
+        return ResponseEntity.status(HttpStatus.CREATED).body(courseFeedbackEntity.getId());
     }
     @Override
     public ResponseEntity<?> relatedCourses(Long id) {
@@ -275,11 +278,23 @@ public class CoursesServiceImp implements CoursesService {
     }
     @Override
     public ResponseEntity<?> showMaterial(long sectionId) {
-        SectionEntity section=this.sectionRepo.findById(sectionId);
+        SectionEntity section = this.sectionRepo.findById(sectionId);
+        if (section == null || section.getCourse() == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Section not found");
+        }
+
+        StudentEntity student = getAuthenticatedStudent();
+        if (!myCoursesItemRepo.existsByCourseAndStudent(section.getCourse(), student)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You are not enrolled in this course");
+        }
+        if (section.getMaterial() == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Material not found");
+        }
+
         HashMap<String, Object> response = new HashMap<>();
-        response.put("material",section.getMaterial().getFileUrl());
-        response.put("type",section.getMaterial().getType());
-        response.put("title",section.getMaterial().getTitle());
+        response.put("material", section.getMaterial().getFileUrl());
+        response.put("type", section.getMaterial().getType());
+        response.put("title", section.getMaterial().getTitle());
         return ResponseEntity.ok(response);
     }
     @Override
@@ -326,58 +341,65 @@ public class CoursesServiceImp implements CoursesService {
     }
     @Override
     public ResponseEntity<?> addNote(NoteReqDTO noteReqDTO) {
-        String note=noteReqDTO.text();
-        if(this.notesRepo.existsByNote(note)){
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        StudentEntity student = getAuthenticatedStudent();
+        VideoEntity video = this.videosRepo.findById(noteReqDTO.lessonId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Video not found"));
+
+        if (!myCoursesItemRepo.existsByCourseAndStudent(video.getCourse(), student)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You are not enrolled in this course");
         }
-        Duration time=noteReqDTO.time();
-        System.out.println(noteReqDTO.time());
-        long videoId=noteReqDTO.lessonId();
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() ||
-                auth.getPrincipal().equals("anonymousUser")) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not logged in");
-        }
-        String username = auth.getName();
-        StudentEntity student=this.studentRepo.findByUsername(username).orElseThrow(()->new RuntimeException("Student not found"));
-        VideoEntity video=this.videosRepo.findById(videoId).orElseThrow(()->new RuntimeException("VideoOOOOOOOO not found"));
-        if(this.notesRepo.existsByNote(note)) {
+        if (notesRepo.existsByNoteAndStudentIdAndVideosId(
+                noteReqDTO.text(), student.getId(), video.getId())) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Note already exists");
         }
-        NotesEntity newNote=NotesEntity.builder()
-                .note(note)
+
+        NotesEntity newNote = NotesEntity.builder()
+                .note(noteReqDTO.text().trim())
                 .student(student)
                 .videos(video)
-                .time(time)
+                .time(noteReqDTO.time())
                 .build();
         student.getNotes().add(newNote);
-        this.studentRepo.save(student);
-        HashMap<String ,Object> response = new HashMap<>();
-        response.put("note",newNote.getNote());
-        response.put("time",newNote.getTime());
-        response.put("id",videoId);
-        return ResponseEntity.ok(response);
+        studentRepo.save(student);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
+                "note", newNote.getNote(),
+                "time", newNote.getTime(),
+                "id", newNote.getId()
+        ));
     }
     @Override
-    public ResponseEntity<?> updateNote(String note, long noteId,long studentId) {
-        StudentEntity student=this.studentRepo.findById(studentId);
-        if(this.notesRepo.existsByNote(note)) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("No Change Occurred");
+    public ResponseEntity<?> updateNote(UpdateNoteRequest request, long noteId) {
+        StudentEntity student = getAuthenticatedStudent();
+        NotesEntity theNote = notesRepo.findById(noteId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Note not found"));
+
+        if (!theNote.getStudent().getId().equals(student.getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You do not own this note");
         }
-        NotesEntity theNote=this.notesRepo.findById(noteId);
-        student.getNotes().remove(theNote);
-        theNote.setNote(note);
-        student.getNotes().add(theNote);
-        this.studentRepo.save(student);
+        if (notesRepo.existsByNoteAndStudentIdAndVideosId(
+                request.text(), student.getId(), theNote.getVideos().getId())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Note already exists");
+        }
+
+        theNote.setNote(request.text().trim());
+        notesRepo.save(theNote);
         return ResponseEntity.ok(theNote.getId());
     }
+
     @Override
-    public ResponseEntity<?> deleteNote(long noteId,long studentId) {
-        StudentEntity student=this.studentRepo.findById(studentId);
-        NotesEntity theNote=this.notesRepo.findById(noteId);
-        student.getNotes().remove(theNote);
-        this.studentRepo.save(student);
-        return ResponseEntity.ok("Note Deleted Successfully");
+    public ResponseEntity<?> deleteNote(long noteId) {
+        StudentEntity student = getAuthenticatedStudent();
+        NotesEntity theNote = notesRepo.findById(noteId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Note not found"));
+
+        if (!theNote.getStudent().getId().equals(student.getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You do not own this note");
+        }
+
+        theNote.setDeletedAt(LocalDateTime.now());
+        notesRepo.save(theNote);
+        return ResponseEntity.ok("Note deleted successfully");
     }
     @Override
     public ResponseEntity<?> getNote(long videoId) {
@@ -401,34 +423,63 @@ public class CoursesServiceImp implements CoursesService {
         return ResponseEntity.ok(responseBody);
     }
     @Override
-    public ResponseEntity<?> getProgress(long studentId, long courseId) {//lesa
-        StudentEntity student=this.studentRepo.findById(studentId);
-        CourseEntity course=this.courseRepo.findById(courseId);
-        CourseProgressEntity progress=this.courseProgressRepo.findByCourseAndStudent(course, student);
-        double myProgress=(progress.getCurrentVideoIndex()/course.getTotalLessons())*100;
-        return ResponseEntity.ok(myProgress);
+    public ResponseEntity<?> getProgress(long courseId) {
+        StudentEntity student = getAuthenticatedStudent();
+        CourseEntity course = courseRepo.findById(courseId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
+
+        CourseProgressEntity progress = courseProgressRepo.findByCourseAndStudent(course, student);
+        if (progress == null || course.getTotalLessons() == 0) {
+            return ResponseEntity.ok(0.0);
+        }
+
+        double myProgress = ((double) progress.getCurrentVideoIndex() / course.getTotalLessons()) * 100.0;
+        return ResponseEntity.ok(Math.min(myProgress, 100.0));
     }
     @Override
-    public ResponseEntity<?> completeVideo(long id){
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() ||
-                auth.getPrincipal().equals("anonymousUser")) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not logged in");
+    public ResponseEntity<?> completeVideo(long id) {
+        StudentEntity student = getAuthenticatedStudent();
+        VideoEntity video = videosRepo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Video not found"));
+
+        if (!myCoursesItemRepo.existsByCourseAndStudent(video.getCourse(), student)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You are not enrolled in this course");
         }
-        String username = auth.getName();
-        StudentEntity student=this.studentRepo.findByUsername(username).orElseThrow(()->new RuntimeException("Student not found"));
-        VideoEntity video=this.videosRepo.findById(id).orElseThrow(()->new RuntimeException("video not found"));
-        StudentVideoProgressEntity progress=this.studentVideoProgressRepo.findByVideoIdAndStudentId(video.getId(),student.getId());
-        double allVideos=this.studentVideoProgressRepo.countByStudentIdAndCourseId(student.getId(),video.getCourse().getId());
-        double completedVideos=this.studentVideoProgressRepo.countByStudentIdAndCompletedAndCourseId(student.getId(),true,video.getCourse().getId());
-        StudentMyCourseItemEntity item=this.myCoursesItemRepo.findByCourseIdAndStudentId(video.getCourse().getId(),student.getId());
-        item.setProgress((completedVideos/allVideos)*100);
-        if(allVideos==completedVideos){
-            item.setIsCompleted(true);
+
+        StudentVideoProgressEntity progress =
+                studentVideoProgressRepo.findByVideoIdAndStudentId(video.getId(), student.getId());
+
+        if (progress == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Video progress not found");
         }
-        this.myCoursesItemRepo.save(item);
+
         progress.setCompleted(true);
-        this.studentVideoProgressRepo.save(progress);
-        return ResponseEntity.status(HttpStatus.OK).body("Video Completed");
+        studentVideoProgressRepo.save(progress);
+
+        int allVideos = studentVideoProgressRepo.countByStudentIdAndCourseId(
+                student.getId(), video.getCourse().getId());
+        int completedVideos = studentVideoProgressRepo.countByStudentIdAndCompletedAndCourseId(
+                student.getId(), true, video.getCourse().getId());
+
+        StudentMyCourseItemEntity item =
+                myCoursesItemRepo.findByCourseIdAndStudentId(video.getCourse().getId(), student.getId());
+
+        if (item != null && allVideos > 0) {
+            item.setProgress(((double) completedVideos / allVideos) * 100.0);
+            item.setIsCompleted(completedVideos == allVideos);
+            myCoursesItemRepo.save(item);
+        }
+
+        return ResponseEntity.ok("Video completed");
+    }
+    private StudentEntity getAuthenticatedStudent() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()
+                || authentication.getPrincipal().equals("anonymousUser")) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not logged in");
+        }
+        return studentRepo.findByUsername(authentication.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Student not found"));
     }
 }
+
