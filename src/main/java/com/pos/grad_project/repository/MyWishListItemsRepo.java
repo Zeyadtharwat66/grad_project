@@ -14,7 +14,7 @@ import java.util.List;
 public interface MyWishListItemsRepo extends JpaRepository<WishlistItemEntity,Long> {
     Page<WishlistItemEntity> findAllByStudentId(long studentId, Pageable pageable);
     Boolean existsByCourseAndStudent(CourseEntity course, StudentEntity student);
-    WishlistItemEntity findByCourse(CourseEntity course);
+    WishlistItemEntity findByCourseAndStudent(CourseEntity course, StudentEntity student);
     Boolean existsByStudent(StudentEntity student);
     @Query("SELECT SUM(c.course.price) FROM WishlistItemEntity c WHERE c.student.id = :studentId")
     Double getTotalCartPrice(Long studentId);
