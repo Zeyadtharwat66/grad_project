@@ -86,6 +86,7 @@ DEFAULT_USER_PASSWORD=
 JWT_SECRET=replace-with-a-long-random-secret
 JWT_ISSUER=zeyad-tharwat
 JWT_EXP_MINUTES=120
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
 ```
 
 > **Note:** Do not commit real passwords, JWT secrets, database credentials, or database dumps.
@@ -103,7 +104,9 @@ The default development configuration uses H2. The application can also be confi
 ## 📌 Main Features
 
 * Student and teacher authentication
-* JWT-based authentication
+* JWT-based authentication with protected API endpoints
+* Ownership checks for student data, notes, feedback, and course content
+* Environment-based CORS configuration
 * Course and category management
 * Course sections and videos
 * Learning materials
@@ -132,6 +135,10 @@ Database
 ```
 
 DTOs, validation, security, configuration, and exception handling are separated into dedicated packages.
+
+## 🧪 Continuous Integration
+
+GitHub Actions runs the Maven test suite on pushes and pull requests to the `main` branch.
 
 ## 🔮 Future Improvements
 
