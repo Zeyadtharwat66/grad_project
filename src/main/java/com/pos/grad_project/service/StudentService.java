@@ -11,9 +11,9 @@ public interface StudentService {
     public ResponseEntity<?> logout();
     public ResponseEntity<?> getCurrentUser();
     public ResponseEntity<?> getStudent(Long id);
-    public ResponseEntity<?> changePassword(Long id, String newPassword, String oldPassword);
-    public ResponseEntity<?> changeUsername(Long id, String newUsername);
-    public ResponseEntity<?> changeProfilePicture(Long id, String picture);
+    ResponseEntity<?> changePassword(ChangePasswordRequest request);
+    ResponseEntity<?> changeUsername(ChangeUsernameRequest request);
+    ResponseEntity<?> changeProfilePicture(ChangeProfilePictureRequest request);
     public ResponseEntity<?> getMyCourses(int size, int page);
     public ResponseEntity<?> getMyCart(int size, int page);
     public ResponseEntity<?> getMyWishList(int size, int page);
