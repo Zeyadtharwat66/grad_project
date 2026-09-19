@@ -24,6 +24,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
@@ -409,6 +410,7 @@ public class StudentServiceImp implements StudentService {
         return ResponseEntity.ok("Added course to wishList");
     }
     @Override
+    @Transactional
     public ResponseEntity<?> addToMyCourses(CheckoutRequestDTO coursed) {
         List<Long> ids=coursed.courses().stream()
                 .map(CoursesCheckOutReqDTO::courseId).toList();
@@ -423,13 +425,18 @@ public class StudentServiceImp implements StudentService {
         for(Long id:ids){
             courses.add(this.courseRepo.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found")));
         }
-        StudentMyCourseEntity myCourse=this.myCourseRepo.findByStudent(student);
-        for(CourseEntity course:courses){
-            if(this.myCoursesItemRepo.existsByCourseAndStudent(course,student)){
+        StudentMyCourseEntity myCourse = this.myCourseRepo.findByStudent(student);
+        if (myCourse == null) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Student course collection not initialized");
+        }
+
+        for (CourseEntity course : courses) {
+            if (this.myCoursesItemRepo.existsByCourseAndStudent(course, student)) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body("Course already exists");
             }
         }
-        for(CourseEntity course:courses){
+
+        for (CourseEntity course : courses) {
             CourseProgressEntity progress=CourseProgressEntity.builder()
                     .course(course)
                     .student(student)
@@ -513,12 +520,17 @@ public class StudentServiceImp implements StudentService {
         String username = auth.getName();
         StudentEntity student = studentRepo.findByUsername(username).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
         CourseEntity course=this.courseRepo.findById(courseId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
-        StudentMyCourseEntity myCourse=this.myCourseRepo.findByStudent(student);
-        this.courseProgressRepo.delete(this.courseProgressRepo.findByCourseAndStudent(course, student));
-        if(!this.myCoursesItemRepo.existsByCourseAndStudent(course,student)){
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Course doesnot exist");
+        StudentMyCourseEntity myCourse = this.myCourseRepo.findByStudent(student);
+        if (!this.myCoursesItemRepo.existsByCourseAndStudent(course, student)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Course does not exist");
         }
-        StudentMyCourseItemEntity item =this.myCoursesItemRepo.findByCourseIdAndStudentId(course.getId(),student.getId());
+
+        CourseProgressEntity progress = this.courseProgressRepo.findByCourseAndStudent(course, student);
+        if (progress != null) {
+            this.courseProgressRepo.delete(progress);
+        }
+
+        StudentMyCourseItemEntity item = this.myCoursesItemRepo.findByCourseIdAndStudentId(course.getId(), student.getId());
         item.setDeletedAt(LocalDateTime.now());
         myCourse.getMyCourseItems().remove(item);
         myCourse.setCoursesCount(myCourse.getCoursesCount()-1);
