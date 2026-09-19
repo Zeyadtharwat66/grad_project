@@ -90,12 +90,12 @@ public class StudentServiceImp implements StudentService {
     @Override
     public ResponseEntity<?> register(RegisterDTO registerDTO) {
         if (studentRepo.findByUsername(registerDTO.username()).isPresent()) {
-            throw new RuntimeException("Username already exists!");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Username already exists");
         }
         StudentEntity studentEntity = StudentEntity.builder()
                 .username(registerDTO.username())
                 .password(passwordEncoder.encode(registerDTO.password()))
-                .role(registerDTO.role() != null ? registerDTO.role() : "STUDENT")
+                .role("STUDENT")
                 .birthDate(registerDTO.birthDate())
                 .email(registerDTO.email())
                 .grade(registerDTO.grade())
@@ -151,34 +151,58 @@ public class StudentServiceImp implements StudentService {
         return ResponseEntity.ok(res);
     }
     @Override
-    public ResponseEntity<?> changePassword(Long id, String newPassword, String oldPassword) {
-        StudentEntity student = this.studentRepo.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
-        if(!passwordEncoder.matches(oldPassword,student.getPassword())){
-            return ResponseEntity.ok("Password does not match!");
+    public ResponseEntity<?> changePassword(ChangePasswordRequest request) {
+        StudentEntity student = getAuthenticatedStudent();
+        if (!passwordEncoder.matches(request.oldPassword(), student.getPassword())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Password does not match");
         }
-        student.setPassword(passwordEncoder.encode(newPassword));
-        student.setUpdatedAt(LocalDateTime.now());
+        student.setPassword(passwordEncoder.encode(request.newPassword()));
         this.studentRepo.save(student);
-        return ResponseEntity.ok("Password changed!");
+        return ResponseEntity.ok("Password changed");
     }
+
     @Override
-    public ResponseEntity<?> changeUsername(Long id, String newUsername) {
-        StudentEntity student = this.studentRepo.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
-        if(this.studentRepo.findByUsername(newUsername).isPresent()){
+    public ResponseEntity<?> changeUsername(ChangeUsernameRequest request) {
+        StudentEntity student = getAuthenticatedStudent();
+        if (student.getUsername().equals(request.newUsername())) {
+            return ResponseEntity.badRequest().body("New username must be different");
+        }
+        if (this.studentRepo.findByUsername(request.newUsername()).isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Username already exists");
         }
-        student.setUsername(newUsername);
-        student.setUpdatedAt(LocalDateTime.now());
+        student.setUsername(request.newUsername());
         this.studentRepo.save(student);
-        return ResponseEntity.ok("Username changed!");
+
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                student.getUsername(),
+                null,
+                List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority(student.getRole()))
+        );
+        String token = jwtTokenService.generateJWTToken(authentication);
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Username changed",
+                "token", token,
+                "username", student.getUsername()
+        ));
     }
+
     @Override
-    public ResponseEntity<?> changeProfilePicture(Long id, String picture) {
-        StudentEntity student = this.studentRepo.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
-        student.setUpdatedAt(LocalDateTime.now());
-        student.setProfilePictureUrl(picture);
+    public ResponseEntity<?> changeProfilePicture(ChangeProfilePictureRequest request) {
+        StudentEntity student = getAuthenticatedStudent();
+        student.setProfilePictureUrl(request.profilePicture());
         this.studentRepo.save(student);
-        return ResponseEntity.ok("Profile picture changed!");
+        return ResponseEntity.ok("Profile picture changed");
+    }
+
+    private StudentEntity getAuthenticatedStudent() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not logged in");
+        }
+        return studentRepo.findByUsername(authentication.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Student not found"));
     }
     @Override
     public ResponseEntity<?> getMyCourses(int size, int page) {
@@ -449,7 +473,7 @@ public class StudentServiceImp implements StudentService {
         if(!this.myWishListItemsRepo.existsByCourseAndStudent(course,student)){
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Course doesnot exist");
         }
-        WishlistItemEntity item =this.myWishListItemsRepo.findByCourse(course);
+        WishlistItemEntity item = this.myWishListItemsRepo.findByCourseAndStudent(course, student);
         item.setDeletedAt(LocalDateTime.now());
         wishList.getWishlistItem().remove(item);
         this.wishListRepo.save(wishList);
@@ -469,7 +493,7 @@ public class StudentServiceImp implements StudentService {
         if(!this.myCartItemRepo.existsByCourseAndStudent(course,student)){
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Course doesnot exist");
         }
-        CartItemEntity item =this.myCartItemRepo.findByCourse(course);
+        CartItemEntity item = this.myCartItemRepo.findByCourseAndStudent(course, student);
         item.setDeletedAt(LocalDateTime.now());
         cart.getCartItems().remove(item);
         cart.setTotalPrice(cart.getTotalPrice()-course.getPrice());
