@@ -5,8 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface NotesRepo extends JpaRepository<NotesEntity, Integer> {
-    Boolean existsByNote(String note);
-    NotesEntity findById(long id);
-    List<NotesEntity> findByVideosIdAndStudentId(long videoId,long studentId);
+public interface NotesRepo extends JpaRepository<NotesEntity, Long> {
+    boolean existsByNoteAndStudentIdAndVideosId(String note, Long studentId, Long videoId);
+    List<NotesEntity> findByVideosIdAndStudentId(long videoId, long studentId);
 }
