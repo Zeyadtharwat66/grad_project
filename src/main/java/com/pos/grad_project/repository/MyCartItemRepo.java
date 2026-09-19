@@ -17,7 +17,7 @@ public interface MyCartItemRepo extends JpaRepository<CartItemEntity,Long> {
    Boolean existsByStudent(StudentEntity student);
    @Query("SELECT SUM(c.course.price) FROM CartItemEntity c WHERE c.student.id = :studentId")
    Double getTotalCartPrice(Long studentId);
-   CartItemEntity findByCourse(CourseEntity course);
+   CartItemEntity findByCourseAndStudent(CourseEntity course, StudentEntity student);
    List<CartItemEntity> findAllByStudent(StudentEntity student);
    void deleteAllByStudent(StudentEntity student);
 }
