@@ -427,8 +427,10 @@ public class CoursesServiceImp implements CoursesService {
     @Override
     public ResponseEntity<?> getProgress(long courseId) {
         StudentEntity student = getAuthenticatedStudent();
-        CourseEntity course = courseRepo.findById(courseId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
+        CourseEntity course = courseRepo.findById(courseId);
+        if (course == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found");
+        }
 
         CourseProgressEntity progress = courseProgressRepo.findByCourseAndStudent(course, student);
         if (progress == null || course.getTotalLessons() == 0) {
