@@ -4,6 +4,8 @@ import com.pos.grad_project.model.dto.NoteReqDTO;
 import com.pos.grad_project.model.dto.UpdateNoteRequest;
 import com.pos.grad_project.service.CoursesService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,8 +24,8 @@ public class CoursesController {
                                          @RequestParam(required = false) String name,
                                          @RequestParam(required = false) Long teacher,
                                          @RequestParam(required = false) String category,
-                                         @RequestParam(defaultValue = "0") int page,
-                                         @RequestParam(defaultValue = "4") int size) {
+                                         @RequestParam(defaultValue = "0") @Min(0) int page,
+                                         @RequestParam(defaultValue = "4") @Min(1) @Max(100) int size) {
         return coursesService.findCoursesByFilters(grade, priceMin, priceMax, rate, name, teacher, category, page, size);
     }
 
@@ -60,7 +62,7 @@ public class CoursesController {
     }
 
     @GetMapping("/search/{name}/{page}/{size}")
-    public ResponseEntity<?> search(@PathVariable String name, @PathVariable int page, @PathVariable int size) {
+    public ResponseEntity<?> search(@PathVariable String name, @PathVariable @Min(0) int page, @PathVariable @Min(1) @Max(100) int size) {
         return coursesService.searchCourse(name, page, size);
     }
 
