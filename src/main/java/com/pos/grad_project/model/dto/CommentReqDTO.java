@@ -1,8 +1,12 @@
 package com.pos.grad_project.model.dto;
 
-import org.springframework.boot.context.properties.bind.DefaultValue;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
 
-import java.time.Duration;
-
-public record CommentReqDTO (String comment, @DefaultValue("0.0") float rate, long lessonId){
-}
+public record CommentReqDTO(
+        @NotBlank(message = "comment is required") String comment,
+        @Min(0) @Max(5) float rate,
+        @Positive(message = "lesson id must be positive") long lessonId
+) {}
