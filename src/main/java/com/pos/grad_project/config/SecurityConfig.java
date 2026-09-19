@@ -1,8 +1,6 @@
 package com.pos.grad_project.config;
 
-import com.pos.grad_project.service.JWTTokenService;
-import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -14,57 +12,71 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import static org.springframework.security.config.Customizer.withDefaults;
-
 @Configuration
 @EnableMethodSecurity
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class SecurityConfig {
-    private final CustomStudentDetailsService CustomStudentDetailsService;
-    private final JWTTokenService jwtTokenService;
-    @Autowired
-    private JwtAuthFilter jwtAuthFilter;
+
+    private final CustomStudentDetailsService customStudentDetailsService;
+    private final JwtAuthFilter jwtAuthFilter;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                .cors(withDefaults())
+                .cors(AbstractHttpConfigurer::disable)
                 .csrf(AbstractHttpConfigurer::disable)
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
-                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll()
+                        // Authentication
+                        .requestMatchers("/auth/login", "/auth/register").permitAll()
+
+                        // Public course browsing
+                        .requestMatchers(
+                                "/courses/filter-courses",
+                                "/courses/course-content/**",
+                                "/courses/teacher-of-course-info/**",
+                                "/courses/course-reviews/**",
+                                "/courses/related-courses/**",
+                                "/courses/video/**",
+                                "/courses/search/**",
+                                "/courses/get-material/**"
+                        ).permitAll()
+
+                        // API documentation / health-style public endpoints
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**"
+                        ).permitAll()
+
+                        // Everything else requires authentication
+                        .anyRequest().authenticated()
                 )
                 .build();
     }
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-    @Bean
-    public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter granted = new JwtGrantedAuthoritiesConverter();
-        granted.setAuthorityPrefix("");
-        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(granted);
-        return converter;
-    }
+
     @Bean
     public DaoAuthenticationProvider daoAuthenticationProvider() {
-        DaoAuthenticationProvider daoAuthenticationProvider = new DaoAuthenticationProvider();
-        daoAuthenticationProvider.setUserDetailsService(CustomStudentDetailsService);
-        daoAuthenticationProvider.setPasswordEncoder(passwordEncoder());
-        return daoAuthenticationProvider;
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(customStudentDetailsService);
+        provider.setPasswordEncoder(passwordEncoder());
+        return provider;
     }
+
     @Bean
-    public AuthenticationManager authenticationManager(DaoAuthenticationProvider auth) {
-        return new ProviderManager(auth);
+    public AuthenticationManager authenticationManager(DaoAuthenticationProvider provider) {
+        return new ProviderManager(provider);
     }
 }
