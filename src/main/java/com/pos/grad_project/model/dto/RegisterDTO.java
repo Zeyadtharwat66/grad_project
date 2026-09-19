@@ -4,8 +4,6 @@ import com.pos.grad_project.annotations.AgeRange;
 import com.pos.grad_project.model.enums.Gender;
 import com.pos.grad_project.model.enums.Grade;
 import jakarta.validation.constraints.*;
-import org.springframework.boot.context.properties.bind.DefaultValue;
-
 import java.time.LocalDate;
 
 public record RegisterDTO(@NotBlank(message = "username is required")
@@ -18,8 +16,6 @@ public record RegisterDTO(@NotBlank(message = "username is required")
                           @NotBlank(message = "password is required")
                           @Pattern(regexp ="^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",message = "Write Strong Password")
                           String password,
-                          @DefaultValue("STUDENT")
-                          String role,
                           @AgeRange(min = 12, max = 18, message = "Age must be between 12 and 18 years")
                           LocalDate birthDate,
                           @NotNull(message = "grade is required")
