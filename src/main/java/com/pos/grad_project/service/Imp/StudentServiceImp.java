@@ -146,8 +146,11 @@ public class StudentServiceImp implements StudentService {
     }
     @Override
     public ResponseEntity<?> getStudent(Long id) {
-        StudentEntity student = studentRepo.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
-        StudentRespDTO res=this.studentMapper.toRespDTO(student);
+        StudentEntity authenticatedStudent = getAuthenticatedStudent();
+        if (!authenticatedStudent.getId().equals(id)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You can only access your own profile");
+        }
+        StudentRespDTO res = this.studentMapper.toRespDTO(authenticatedStudent);
         return ResponseEntity.ok(res);
     }
     @Override
